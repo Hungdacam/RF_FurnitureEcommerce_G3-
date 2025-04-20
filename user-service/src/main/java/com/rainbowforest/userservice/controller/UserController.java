@@ -33,7 +33,7 @@ public class UserController {
         		HttpStatus.NOT_FOUND);
     }
 
-    @GetMapping (value = "/users", params = "name")
+	@GetMapping(value = "/users", params = "name")
     public ResponseEntity<User> getUserByName(@RequestParam("name") String userName){
     	User user = userService.getUserByName(userName);
     	if(user != null) {
