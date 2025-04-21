@@ -45,6 +45,57 @@ const useProductStore = create((set) => ({
       set({ isLoading: false });
     }
   },
+
+  addProduct: async (productData, imageFile) => {
+    set({ isLoading: true });
+    try {
+      if (!imageFile) {
+        toast.error('Vui lòng chọn hình ảnh!');
+        return;
+      }
+  
+      const formData = new FormData();
+      formData.append('product_name', productData.product_name);
+      formData.append('category', productData.category);
+      formData.append('description', productData.description);
+      formData.append('price', productData.price);
+      formData.append('quantity', productData.quantity);
+      formData.append('image', imageFile);
+  
+      const res = await axiosCatalog.post('/admin/products', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+  
+      set((state) => ({
+        products: [...state.products, res.data],
+      }));
+  
+      toast.success('Sản phẩm đã được thêm thành công!');
+    } catch (error) {
+      if (error.response) {
+        toast.error(`Lỗi từ server: ${error.response.data.message || 'Không thể thêm sản phẩm'}`);
+      } else if (error.request) {
+        toast.error('Không thể kết nối tới server. Kiểm tra backend hoặc CORS.');
+      } else {
+        toast.error(`Lỗi: ${error.message}`);
+      }
+      console.error('Error adding product:', error);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+  deleteProduct: async (id) => {
+    set({ isLoading: true });
+    try {
+      await axiosCatalog.delete(`/admin/products/${id}`);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
 }));
 
 export default useProductStore;

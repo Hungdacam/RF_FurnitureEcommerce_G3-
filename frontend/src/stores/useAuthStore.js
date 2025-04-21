@@ -62,7 +62,12 @@ const useAuthStore = create((set) => ({
       });
       if (res.data.token) {
         localStorage.setItem('authToken', res.data.token);
-        set({ authUser: { userName: res.data.userName } });
+        set({
+          authUser: {
+            userName: res.data.userName,
+            roles: res.data.roles, // Lưu vai trò từ phản hồi của server
+          },
+        });
         toast.success('Đăng nhập thành công!');
         navigate('/dashboard');
       } else {

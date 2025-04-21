@@ -1,10 +1,21 @@
 import React, { useEffect } from 'react';
 import useProductStore from '../stores/useProductStore';
+import { useNavigate } from 'react-router-dom';
+import useAuthStore from '../stores/useAuthStore';
 import '../css/Dasboard.css'; // We'll update this CSS file separately
 
 const Dashboard = () => {
   const { products, fetchAllProducts, isLoading } = useProductStore();
+  const navigate = useNavigate();
+  const { authUser } = useAuthStore(); // Lấy thông tin người dùng từ store
 
+  const handleGoToProductManagement = () => {
+    if (authUser?.roles?.includes('ROLE_ADMIN')) {
+      navigate('/product-management');
+    } else {
+      alert('Bạn không có quyền truy cập vào trang này!');
+    }
+  };
   useEffect(() => {
     fetchAllProducts();
   }, [fetchAllProducts]);
@@ -31,6 +42,23 @@ const Dashboard = () => {
               <li className="nav-item"><a href="#" className="nav-link">Danh mục sản phẩm</a></li>
               <li className="nav-item"><a href="#" className="nav-link">Giỏ hàng</a></li>
               <li className="nav-item"><a href="#" className="nav-link">About Us</a></li>
+              <li>
+              {authUser?.roles?.includes('ROLE_ADMIN') && ( // Chỉ hiển thị nút nếu có ROLE_ADMIN
+        <button
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#007bff',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+          }}
+          onClick={handleGoToProductManagement}
+        >
+          ĐI ĐẾN TRANG QUẢN LÍ SẢN PHẨM
+        </button>
+      )}  
+              </li>
             </ul>
           </nav>
           <div className="user-profile">
@@ -42,6 +70,7 @@ const Dashboard = () => {
       </header>
 
       <div className="container">
+     
         <h1 className="title">DANH SÁCH SẢN PHẨM</h1>
         <div className="product-grid">
           {products.map((product) => (

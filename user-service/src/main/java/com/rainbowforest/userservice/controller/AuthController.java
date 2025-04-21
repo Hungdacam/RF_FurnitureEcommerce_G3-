@@ -22,6 +22,8 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 public class AuthController {
@@ -55,6 +57,12 @@ public class AuthController {
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             String token = jwtUtil.generateToken(userDetails);
 
+            // Lấy danh sách vai trò
+            List<String> roles = userDetails.getAuthorities()
+                                            .stream()
+                                            .map(authority -> authority.getAuthority())
+                                            .collect(Collectors.toList());
+
             // Tạo cookie chứa token (HttpOnly để tăng bảo mật)
             Cookie cookie = new Cookie("token", token);
             cookie.setHttpOnly(true);
@@ -66,6 +74,7 @@ public class AuthController {
             LoginResponse loginResponse = new LoginResponse();
             loginResponse.setToken(token);
             loginResponse.setUserName(userDetails.getUsername());
+            loginResponse.setRoles(roles); // Thêm vai trò vào phản hồi
 
             return new ResponseEntity<>(
                     loginResponse,
