@@ -40,7 +40,8 @@ const useAuthStore = create((set) => ({
         localStorage.setItem('authToken', res.data.token);
         set({ authUser: { userName: res.data.userName, userId: res.data.userId } });
         toast.success('Đăng ký thành công!');
-        navigate('/dashboard');
+        return true;
+        // navigate('/dashboard');
       } else {
         throw new Error('Không nhận được token từ server');
       }
@@ -48,6 +49,7 @@ const useAuthStore = create((set) => ({
       console.error('Lỗi đăng ký:', error);
       const errorMessage = error.response?.data?.message || 'Đăng ký thất bại';
       toast.error(errorMessage);
+      return false;
     } finally {
       set({ isSigningUp: false });
     }
@@ -79,7 +81,7 @@ const useAuthStore = create((set) => ({
   logout: async () => {
     set({ isLoggingOut: true });
     try {
-      await axiosInstance.post('/logout');
+      // await axiosInstance.post('/logout');
       localStorage.removeItem('authToken');
       set({ authUser: null });
       toast.success('Đăng xuất thành công');
