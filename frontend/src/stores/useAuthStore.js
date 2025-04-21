@@ -31,7 +31,7 @@ const useAuthStore = create((set) => ({
   signup: async (data, navigate) => {
     set({ isSigningUp: true });
     try {
-      const res = await axiosInstance.post('/registration', {
+      const res = await axiosInstance.post('/api/registration', {
         userName: data.userName,
         userPassword: data.userPassword,
         userDetails: data.userDetails || null,
@@ -45,6 +45,7 @@ const useAuthStore = create((set) => ({
         throw new Error('Không nhận được token từ server');
       }
     } catch (error) {
+      console.error('Lỗi đăng ký:', error);
       const errorMessage = error.response?.data?.message || 'Đăng ký thất bại';
       toast.error(errorMessage);
     } finally {
