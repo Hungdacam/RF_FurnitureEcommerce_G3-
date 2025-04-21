@@ -1,7 +1,14 @@
 import axios from 'axios';
 
-const axiosInstance = axios.create({
-  baseURL: 'http://localhost:8080',
+export const axiosInstance = axios.create({
+  baseURL: 'http://localhost:8811',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+export  const axiosCatalog = axios.create({
+  baseURL: 'http://localhost:8810/api/catalog', // Product Catalog Service
   headers: {
     'Content-Type': 'application/json',
   },
@@ -19,4 +26,3 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-export default axiosInstance;

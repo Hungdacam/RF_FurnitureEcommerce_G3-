@@ -37,6 +37,8 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
         config.addAllowedOriginPattern("*"); // Thay vì addAllowedOrigin("*")
+        config.addAllowedOrigin("http://localhost:5174"); 
+        config.addAllowedOrigin("http://localhost:5173");// Chỉ định nguồn gốc được phép
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         source.registerCorsConfiguration("/**", config);
