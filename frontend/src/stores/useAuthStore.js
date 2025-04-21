@@ -56,7 +56,7 @@ const useAuthStore = create((set) => ({
   login: async (data, navigate) => {
     set({ isLoggingIn: true });
     try {
-      const res = await axiosInstance.post('/login', {
+      const res = await axiosInstance.post('/api/login', {
         userName: data.userName,
         userPassword: data.userPassword,
       });
