@@ -29,15 +29,38 @@ export default function ProductManagement() {
     quantity: "",
   });
   const [imageFile, setImageFile] = useState(null);
+  const [errors, setErrors] = useState({});
 
-  // Fetch danh sách sản phẩm khi component mount
+
   useEffect(() => {
     fetchAllProducts();
   }, [fetchAllProducts]);
 
+  const validateForm = () => {
+    const newErrors = {};
+    if (!productData.product_name.trim())
+      newErrors.product_name = "Tên sản phẩm không được để trống";
+    if (!productData.category.trim())
+      newErrors.category = "Danh mục không được để trống";
+    if (!productData.description.trim())
+      newErrors.description = "Mô tả không được để trống";
+    if (!productData.price || productData.price <= 0)
+      newErrors.price = "Giá không được để trống";
+    if (!productData.quantity || productData.quantity < 0)
+      newErrors.quantity = "Số lượng không được để trống";
+    if (!imageFile) newErrors.image = "Hình ảnh không được để trống";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0; 
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setProductData({ ...productData, [name]: value });
+ 
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handleEditInputChange = (e) => {
@@ -47,10 +70,16 @@ export default function ProductManagement() {
 
   const handleImageChange = (e) => {
     setImageFile(e.target.files[0]);
+    
+    if (errors.image) {
+      setErrors((prev) => ({ ...prev, image: "" }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) return; 
+
     await addProduct(productData, imageFile);
     setShowForm(false);
     setProductData({
@@ -61,6 +90,7 @@ export default function ProductManagement() {
       quantity: "",
     });
     setImageFile(null);
+    setErrors({}); 
     fetchAllProducts();
   };
 
@@ -79,11 +109,12 @@ export default function ProductManagement() {
     setEditProductData({
       product_name: product.productName,
       category: product.category,
-      description: product.description, 
+      description: product.description,
       price: product.price,
       quantity: product.quantity,
     });
   };
+
   const handleUpdate = async (e) => {
     e.preventDefault();
     await updateProduct(editProductId, editProductData, imageFile);
@@ -225,7 +256,7 @@ export default function ProductManagement() {
                     <p className="product-category">
                       Danh mục: {product.category}
                     </p>
-                    <p className="product-description">{product.discription}</p>
+                    <p className="product-description">{product.description}</p>
                     <p className="product-price">Giá: ${product.price}</p>
                     <p className="product-quantity">
                       Số lượng: {product.quantity}
@@ -262,8 +293,10 @@ export default function ProductManagement() {
               name="product_name"
               value={productData.product_name}
               onChange={handleInputChange}
-              required
             />
+            {errors.product_name && (
+              <span className="error-message">{errors.product_name}</span>
+            )}
           </div>
           <div className="form-group">
             <label htmlFor="category">Danh mục:</label>
@@ -273,8 +306,10 @@ export default function ProductManagement() {
               name="category"
               value={productData.category}
               onChange={handleInputChange}
-              required
             />
+            {errors.category && (
+              <span className="error-message">{errors.category}</span>
+            )}
           </div>
           <div className="form-group">
             <label htmlFor="description">Mô tả:</label>
@@ -283,8 +318,10 @@ export default function ProductManagement() {
               name="description"
               value={productData.description}
               onChange={handleInputChange}
-              required
             ></textarea>
+            {errors.description && (
+              <span className="error-message">{errors.description}</span>
+            )}
           </div>
           <div className="form-group">
             <label htmlFor="price">Giá:</label>
@@ -294,8 +331,10 @@ export default function ProductManagement() {
               name="price"
               value={productData.price}
               onChange={handleInputChange}
-              required
             />
+            {errors.price && (
+              <span className="error-message">{errors.price}</span>
+            )}
           </div>
           <div className="form-group">
             <label htmlFor="quantity">Số lượng:</label>
@@ -305,8 +344,10 @@ export default function ProductManagement() {
               name="quantity"
               value={productData.quantity}
               onChange={handleInputChange}
-              required
             />
+            {errors.quantity && (
+              <span className="error-message">{errors.quantity}</span>
+            )}
           </div>
           <div className="form-group">
             <label htmlFor="image">Hình ảnh:</label>
@@ -315,8 +356,10 @@ export default function ProductManagement() {
               id="image"
               name="image"
               onChange={handleImageChange}
-              required
             />
+            {errors.image && (
+              <span className="error-message">{errors.image}</span>
+            )}
           </div>
           <button type="submit" className="submit-button" disabled={isLoading}>
             {isLoading ? "Đang thêm..." : "Thêm Sản Phẩm"}
