@@ -23,8 +23,8 @@ public class Product {
 	@NotNull
 	private BigDecimal price;
 
-	@Column(name = "discription") // Consider correcting to "description"
-	private String discription;
+	@Column(name = "description")
+	private String description;
 
 	@Column(name = "category")
 	@NotNull
@@ -64,12 +64,12 @@ public class Product {
 		this.price = price;
 	}
 
-	public String getDiscription() {
-		return discription;
+	public String getDescription() {
+		return description;
 	}
 
-	public void setDiscription(String discription) {
-		this.discription = discription;
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
 	public String getCategory() {

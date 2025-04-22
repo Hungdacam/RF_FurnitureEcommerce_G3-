@@ -79,15 +79,14 @@ export default function ProductManagement() {
     setEditProductData({
       product_name: product.productName,
       category: product.category,
-      description: product.description,
+      description: product.description, 
       price: product.price,
       quantity: product.quantity,
     });
   };
-
   const handleUpdate = async (e) => {
     e.preventDefault();
-    await updateProduct(editProductId, editProductData);
+    await updateProduct(editProductId, editProductData, imageFile);
     setEditProductId(null);
     setEditProductData({
       product_name: "",
@@ -96,7 +95,8 @@ export default function ProductManagement() {
       price: "",
       quantity: "",
     });
-    fetchAllProducts(); // Làm mới danh sách sau khi cập nhật
+    setImageFile(null);
+    fetchAllProducts();
   };
 
   const handleCancelEdit = () => {
@@ -108,6 +108,7 @@ export default function ProductManagement() {
       price: "",
       quantity: "",
     });
+    setImageFile(null);
   };
 
   return (
@@ -191,16 +192,25 @@ export default function ProductManagement() {
                         required
                       />
                     </div>
+                    <div className="form-group">
+                      <label htmlFor="edit_image">Hình ảnh (tùy chọn):</label>
+                      <input
+                        type="file"
+                        id="edit_image"
+                        name="image"
+                        onChange={handleImageChange}
+                      />
+                    </div>
                     <div className="edit-buttons">
                       <button type="submit" className="update-button">
-                        Cập Nhật
+                        <span className="button-icon">✔</span> Lưu Cập Nhật
                       </button>
                       <button
                         type="button"
                         className="cancel-button"
                         onClick={handleCancelEdit}
                       >
-                        Hủy
+                        <span className="button-icon">✖</span> Hủy
                       </button>
                     </div>
                   </form>
@@ -213,25 +223,25 @@ export default function ProductManagement() {
                     />
                     <h3 className="product-name">{product.productName}</h3>
                     <p className="product-category">
-                      Category: {product.category}
+                      Danh mục: {product.category}
                     </p>
-                    <p className="product-description">{product.description}</p>
-                    <p className="product-price">Price: ${product.price}</p>
+                    <p className="product-description">{product.discription}</p>
+                    <p className="product-price">Giá: ${product.price}</p>
                     <p className="product-quantity">
-                      Quantity: {product.quantity}
+                      Số lượng: {product.quantity}
                     </p>
                     <div className="product-actions">
                       <button
                         className="edit-button"
                         onClick={() => handleEdit(product)}
                       >
-                        Cập Nhật
+                        <span className="button-icon">✎</span> Cập Nhật
                       </button>
                       <button
                         className="delete-button"
                         onClick={() => handleDelete(product.id)}
                       >
-                        Xóa
+                        <span className="button-icon">🗑</span> Xóa
                       </button>
                     </div>
                   </>

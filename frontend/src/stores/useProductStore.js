@@ -96,6 +96,48 @@ const useProductStore = create((set) => ({
       set({ isLoading: false });
     }
   },
+  updateProduct: async (id, productData, imageFile) => {
+    set({ isLoading: true });
+    try {
+      const formData = new FormData();
+      formData.append('product_name', productData.product_name);
+      formData.append('category', productData.category);
+      formData.append('description', productData.description);
+      formData.append('price', productData.price);
+      formData.append('quantity', productData.quantity);
+  
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
+  
+      const res = await axiosCatalog.put(`/admin/products/${id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+  
+      set((state) => ({
+        products: state.products.map((product) =>
+          product.id === id ? res.data : product
+        ),
+      }));
+  
+      toast.success('Sản phẩm đã được cập nhật thành công!');
+    } catch (error) {
+      if (error.response) {
+        toast.error(`Lỗi từ server: ${error.response.data.message || 'Không thể cập nhật sản phẩm. Vui lòng thử lại!'}`);
+      } else if (error.request) {
+        toast.error('Không thể kết nối tới server. Vui lòng kiểm tra backend hoặc CORS.');
+      } else {
+        toast.error(`Lỗi: ${error.message}`);
+      }
+      console.error('Error updating product:', error);
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
 }));
 
 export default useProductStore;

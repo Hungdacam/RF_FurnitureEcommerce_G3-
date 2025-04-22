@@ -332,6 +332,29 @@ a {
   box-shadow: 0 5px 10px rgba(0, 123, 255, 0.3);
 }
 
+.add-to-info-button {
+  margin: 2%;
+  background: linear-gradient(0deg, #4b738e, #00ffea);
+  color: #fff;
+  padding: 12px 0;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.add-to-info-button:hover {
+  background: linear-gradient(90deg, #0056b3, #007bff);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 10px rgba(0, 123, 255, 0.3);
+}
+
 .cart-icon {
   font-size: 18px;
 }
