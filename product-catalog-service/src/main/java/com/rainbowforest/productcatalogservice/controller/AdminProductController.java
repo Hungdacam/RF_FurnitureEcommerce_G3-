@@ -10,8 +10,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletRequest;
 
-import static org.mockito.Mockito.*;
-
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,14 +28,14 @@ public class AdminProductController {
     @Autowired
     private HeaderGenerator headerGenerator;
 
-    // Khởi tạo Cloudinary
+
     private final Cloudinary cloudinary;
 
     public AdminProductController() {
         cloudinary = new Cloudinary(ObjectUtils.asMap(
-                "cloud_name", "dbjqhaayj", // Thay bằng cloud_name của bạn
-                "api_key", "768372645321588", // Thay bằng API Key
-                "api_secret", "Kji8OdwCTNIcOTbP4erdeBuYmhU" // Thay bằng API Secret
+                "cloud_name", "dbjqhaayj", 
+                "api_key", "768372645321588", 
+                "api_secret", "Kji8OdwCTNIcOTbP4erdeBuYmhU" 
         ));
     }
 
@@ -56,13 +54,13 @@ public class AdminProductController {
             @RequestPart("image") MultipartFile image,
             HttpServletRequest request) {
         try {
-            // Upload hình ảnh lên Cloudinary
+           
             Map uploadResult = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.asMap(
-                    "upload_preset", "KTPM_G3" // Thay bằng upload preset của bạn
+                    "upload_preset", "KTPM_G3" 
             ));
             String imageUrl = (String) uploadResult.get("secure_url");
 
-            // Tạo đối tượng Product
+            
             Product product = new Product();
             product.setProductName(productName);
             product.setCategory(category);
@@ -71,7 +69,7 @@ public class AdminProductController {
             product.setQuantity(Integer.parseInt(quantity));
             product.setImageUrl(imageUrl);
 
-            // Lưu sản phẩm vào database
+           
             productService.addProduct(product);
 
             return new ResponseEntity<Product>(
@@ -122,7 +120,7 @@ public class AdminProductController {
                 return new ResponseEntity<Product>(headerGenerator.getHeadersForError(),
                         HttpStatus.NOT_FOUND);
             }
-            String imageUrl = existingProduct.getImageUrl();
+            String imageUrl = existingproduct.getImageUrl();
             if (image != null && !image.isEmpty()) {
                 Map uploadResult = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.asMap(
                         "upload_preset", "KTPM_G3"));
