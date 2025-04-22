@@ -75,6 +75,7 @@ export default function ProductManagement() {
   };
 
   const handleEdit = (product) => {
+    console.log('Product being edited:', product); // Kiểm tra dữ liệu sản phẩm
     setEditProductId(product.id);
     setEditProductData({
       product_name: product.productName,

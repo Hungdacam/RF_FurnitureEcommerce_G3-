@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import useProductStore from '../stores/useProductStore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import useAuthStore from '../stores/useAuthStore';
 import '../css/Dasboard.css'; // We'll update this CSS file separately
 
@@ -8,6 +8,8 @@ const Dashboard = () => {
   const { products, fetchAllProducts, isLoading } = useProductStore();
   const navigate = useNavigate();
   const { authUser } = useAuthStore(); // Lấy thông tin người dùng từ store
+  const { productId } = useParams();
+  console.log('Product ID:', productId);
 
   const handleGoToProductManagement = () => {
     if (authUser?.roles?.includes('ROLE_ADMIN')) {
@@ -85,15 +87,18 @@ const Dashboard = () => {
               </div>
               <div className="product-details">
                 <h2 className="product-name">{product.productName}</h2>
-                <p className="product-category">Loại: {product.category}</p>
-                <p className="product-description">Mô tả: {product.discription}</p>
                 <div className="product-info">
                   <p className="product-price">${product.price}</p>
-                  <p className="product-quantity">Số lượng: {product.quantity}</p>
                 </div>
                 <button className="add-to-cart-button">
                   <span className="cart-icon">🛒</span>
                   <span>Thêm vào giỏ hàng</span>
+                </button>
+                <button
+                  className="add-to-info-button"
+                  onClick={() => navigate(`/product-detail/${product.id}`)}
+                >
+                  <span>Chi tiết sản phẩm</span>
                 </button>
               </div>
             </div>
