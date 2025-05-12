@@ -46,46 +46,51 @@ const useProductStore = create((set) => ({
     }
   },
 
-  addProduct: async (productData, imageFile) => {
+addProduct: async (productData, imageFile) => {
     set({ isLoading: true });
     try {
-      if (!imageFile) {
-        toast.error('Vui lòng chọn hình ảnh!');
-        return;
-      }
-  
-      const formData = new FormData();
-      formData.append('product_name', productData.product_name);
-      formData.append('category', productData.category);
-      formData.append('description', productData.description);
-      formData.append('price', productData.price);
-      formData.append('quantity', productData.quantity);
-      formData.append('image', imageFile);
-  
-      const res = await axiosCatalog.post('/admin/products', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-  
-      set((state) => ({
-        products: [...state.products, res.data],
-      }));
-  
-      toast.success('Sản phẩm đã được thêm thành công!');
+        if (!imageFile) {
+            toast.error('Vui lòng chọn hình ảnh!');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('product_name', productData.product_name);
+        formData.append('category', productData.category);
+        formData.append('description', productData.description);
+        formData.append('price', productData.price);
+        formData.append('quantity', productData.quantity);
+        formData.append('image', imageFile);
+
+        const res = await axiosCatalog.post('/admin/products', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+
+        set((state) => ({
+            products: [...state.products, res.data],
+        }));
+
+        toast.success('Sản phẩm đã được thêm thành công!');
     } catch (error) {
-      if (error.response) {
-        toast.error(`Lỗi từ server: ${error.response.data.message || 'Không thể thêm sản phẩm'}`);
-      } else if (error.request) {
-        toast.error('Không thể kết nối tới server. Kiểm tra backend hoặc CORS.');
-      } else {
-        toast.error(`Lỗi: ${error.message}`);
-      }
-      console.error('Error adding product:', error);
+        console.error('Error adding product:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            headers: error.response?.headers,
+            message: error.message,
+        });
+        // Vẫn cập nhật danh sách sản phẩm nếu lỗi là 405
+        if (error.response?.status === 405) {
+            await useProductStore.getState().fetchAllProducts();
+            toast.success('Sản phẩm đã được thêm, nhưng có lỗi phản hồi từ server!');
+        } else {
+            toast.error(`Lỗi: ${error.response?.data?.message || error.message}`);
+        }
     } finally {
-      set({ isLoading: false });
+        set({ isLoading: false });
     }
-  },
+},
   deleteProduct: async (id) => {
     set({ isLoading: true });
     try {

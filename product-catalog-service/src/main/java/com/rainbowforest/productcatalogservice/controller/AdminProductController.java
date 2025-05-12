@@ -16,12 +16,6 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 
 @RestController
-@CrossOrigin(
-    origins = "http://localhost:5173",
-    methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS},
-    allowedHeaders = "*",
-    allowCredentials = "true"
-)
 @RequestMapping("/admin")
 public class AdminProductController {
 
@@ -36,17 +30,17 @@ public class AdminProductController {
 
     public AdminProductController() {
         cloudinary = new Cloudinary(ObjectUtils.asMap(
-            "cloud_name", "dbjqhaayj", // Thay bằng cloud_name của bạn
-            "api_key", "768372645321588",  // Thay bằng API Key
-            "api_secret", "Kji8OdwCTNIcOTbP4erdeBuYmhU" // Thay bằng API Secret
+            "cloud_name", "dbjqhaayj",
+            "api_key", "768372645321588",  
+            "api_secret", "Kji8OdwCTNIcOTbP4erdeBuYmhU" 
         ));
     }
-	@RequestMapping(value = "/products", method = RequestMethod.OPTIONS)
+	@RequestMapping(value = "/**", method = RequestMethod.OPTIONS)
     public ResponseEntity<Void> handleOptions() {
         return ResponseEntity.ok().build();
     }
     @PostMapping(value = "/products", consumes = {"multipart/form-data"})
-    private ResponseEntity<Product> addProduct(
+    public ResponseEntity<Product> addProduct(
             @RequestPart("product_name") String productName,
             @RequestPart("category") String category,
             @RequestPart("description") String description,
@@ -54,10 +48,12 @@ public class AdminProductController {
             @RequestPart("quantity") String quantity,
             @RequestPart("image") MultipartFile image,
             HttpServletRequest request) {
+                System.out.println(">>> Received POST addProduct");
+
         try {
             // Upload hình ảnh lên Cloudinary
             Map uploadResult = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.asMap(
-                "upload_preset", "KTPM_G3" // Thay bằng upload preset của bạn
+                "upload_preset", "KTPM_G3" 
             ));
             String imageUrl = (String) uploadResult.get("secure_url");
 
@@ -88,7 +84,7 @@ public class AdminProductController {
     }
     
     @DeleteMapping(value = "/products/{id}")
-    private ResponseEntity<Void> deleteProduct(@PathVariable("id") Long id) {
+    public ResponseEntity<Void> deleteProduct(@PathVariable("id") Long id) {
         Product product = productService.getProductById(id);
         if (product != null) {
             try {

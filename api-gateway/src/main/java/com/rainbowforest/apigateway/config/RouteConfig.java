@@ -19,10 +19,18 @@ public class RouteConfig {
                                         .setName("userServiceCircuitBreaker")
                                         .setFallbackUri("forward:/fallback/user")))
                         .uri("lb://user-service"))
+                .route("user-service-login", r -> r
+                        .path("/api/login")
+                        .filters(f -> f
+                                .rewritePath("/api/login", "/api/login")
+                                .circuitBreaker(config -> config
+                                        .setName("userServiceCircuitBreaker")
+                                        .setFallbackUri("forward:/fallback/user")))
+                        .uri("lb://user-service"))
                 .route("product-catalog-service", r -> r
                         .path("/api/catalog/**")
                         .filters(f -> f
-                                .rewritePath("/api/catalog/(?<segment>.*)", "/${segment}")
+                                .rewritePath("/api/catalog/(?<segment>.*)", "/api/catalog/${segment}")
                                 .circuitBreaker(config -> config
                                         .setName("catalogServiceCircuitBreaker")
                                         .setFallbackUri("forward:/fallback/catalog")))

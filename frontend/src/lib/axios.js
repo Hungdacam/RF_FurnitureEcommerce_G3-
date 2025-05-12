@@ -1,14 +1,14 @@
 import axios from 'axios';
 
 export const axiosInstance = axios.create({
-  baseURL: 'http://localhost:8811',
+  baseURL: 'http://localhost:8900', // Authentication Service
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 export  const axiosCatalog = axios.create({
-  baseURL: 'http://localhost:8810/api/catalog', // Product Catalog Service
+  baseURL: 'http://localhost:8900/api/catalog', // Product Catalog Service
   headers: {
     'Content-Type': 'application/json',
   },
