@@ -6,7 +6,7 @@ public class LoginResponse {
     private String token;
     private String userName;
     private List<String> roles;
-
+    
     // Getters and setters
     public String getToken() {
         return token;

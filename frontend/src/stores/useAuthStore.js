@@ -8,7 +8,7 @@ const useAuthStore = create((set) => ({
   isLoggingIn: false,
   isCheckingAuth: true,
   isLoggingOut: false,
-
+  role:null,
   checkAuth: async () => {
     set({ isCheckingAuth: true });
     try {
@@ -62,11 +62,13 @@ const useAuthStore = create((set) => ({
       });
       if (res.data.token) {
         localStorage.setItem('authToken', res.data.token);
+        const userRes = await axiosInstance.get(`/api/users/by-username?username=${res.data.userName}`);
         set({
           authUser: {
-            userName: res.data.userName,
-            roles: res.data.roles, // Lưu vai trò từ phản hồi của server
+            ...userRes.data,
+            roles: [userRes.data.role?.roleName], // Đảm bảo luôn có mảng roles
           },
+          role: res.data.roles, // nếu muốn giữ
         });
         toast.success('Đăng nhập thành công!');
         navigate('/dashboard');
@@ -81,13 +83,14 @@ const useAuthStore = create((set) => ({
     }
   },
 
-  logout: async () => {
+  logout: async (navigate) => {
     set({ isLoggingOut: true });
     try {
-      await axiosInstance.post('/logout');
+      await axiosInstance.post('/api/logout'); // Gửi yêu cầu POST
       localStorage.removeItem('authToken');
       set({ authUser: null });
       toast.success('Đăng xuất thành công');
+      if (navigate) navigate('/');
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Lỗi khi đăng xuất';
       toast.error(errorMessage);

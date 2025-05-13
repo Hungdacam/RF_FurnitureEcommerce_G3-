@@ -11,7 +11,7 @@ public class CorsGlobalConfiguration {
     @Bean
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
-        corsConfig.addAllowedOrigin("http://localhost:5174"); // Chỉ giữ origin của frontend
+        corsConfig.addAllowedOrigin("http://localhost:5173"); // Chỉ giữ origin của frontend
         corsConfig.addAllowedHeader("*");
         corsConfig.addAllowedMethod("*");
         corsConfig.setAllowCredentials(true);

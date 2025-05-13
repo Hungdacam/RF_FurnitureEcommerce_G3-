@@ -1,15 +1,33 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import useProductStore from '../stores/useProductStore';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/useAuthStore';
-import '../css/Dasboard.css'; // We'll update this CSS file separately
+import '../css/Dasboard.css';
 
 const Dashboard = () => {
   const { products, fetchAllProducts, isLoading } = useProductStore();
   const navigate = useNavigate();
-  const { authUser } = useAuthStore(); // Lấy thông tin người dùng từ store
-  const { productId } = useParams();
-  console.log('Product ID:', productId);
+  const { authUser } = useAuthStore();
+  const { logout } = useAuthStore();
+  const {role}  = useAuthStore();
+  const [showMenu, setShowMenu] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = () => setShowMenu(false);
+    if (showMenu) document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showMenu]);
+
+  const handleProfileClick = (e) => {
+    e.stopPropagation();
+    setShowMenu((prev) => !prev);
+  };
+
+  const handleLogout = async () => {
+    if (window.confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+      await logout(navigate);
+    }
+  };
 
   const handleGoToProductManagement = () => {
     if (authUser?.roles?.includes('ROLE_ADMIN')) {
@@ -18,6 +36,7 @@ const Dashboard = () => {
       alert('Bạn không có quyền truy cập vào trang này!');
     }
   };
+
   useEffect(() => {
     fetchAllProducts();
   }, [fetchAllProducts]);
@@ -45,34 +64,45 @@ const Dashboard = () => {
               <li className="nav-item"><a href="#" className="nav-link">Giỏ hàng</a></li>
               <li className="nav-item"><a href="#" className="nav-link">About Us</a></li>
               <li>
-              {authUser?.roles?.includes('ROLE_ADMIN') && ( // Chỉ hiển thị nút nếu có ROLE_ADMIN
-        <button
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#007bff',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer',
-          }}
-          onClick={handleGoToProductManagement}
-        >
-          ĐI ĐẾN TRANG QUẢN LÍ SẢN PHẨM
-        </button>
-      )}  
+                {authUser?.roles?.includes('ROLE_ADMIN') && (
+                  <button
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: '#007bff',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: 'pointer',
+                    }}
+                    onClick={handleGoToProductManagement}
+                  >
+                    ĐI ĐẾN TRANG QUẢN LÍ SẢN PHẨM
+                  </button>
+                )}
               </li>
             </ul>
           </nav>
           <div className="user-profile">
-            <button className="profile-button">
+            <button className="profile-button" onClick={handleProfileClick}>
               <span className="profile-icon">👤</span>
             </button>
+            {showMenu && (
+              <div className="profile-menu" style={{
+                position: 'absolute', right: 0, top: '100%', background: '#fff', border: '1px solid #ccc', borderRadius: 4, zIndex: 10
+              }}>
+                <button style={{ display: 'block', width: '100%' }} onClick={() => { setShowMenu(false); navigate('/profileUser'); }}>
+                  Xem thông tin cá nhân
+                </button>
+                <button style={{ display: 'block', width: '100%' }} onClick={handleLogout}>
+                  Đăng xuất
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
 
       <div className="container">
-     
         <h1 className="title">DANH SÁCH SẢN PHẨM</h1>
         <div className="product-grid">
           {products.map((product) => (
