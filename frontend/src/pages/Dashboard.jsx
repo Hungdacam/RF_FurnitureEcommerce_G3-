@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import useProductStore from '../stores/useProductStore';
+
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/useAuthStore';
-import '../css/Dasboard.css';
 
+import useCartStore from '../stores/\buseCartStore';
+
+import '../css/Dasboard.css';
 const Dashboard = () => {
-  const { products, fetchAllProducts, isLoading } = useProductStore();
-  const navigate = useNavigate();
-  const { authUser } = useAuthStore();
-  const { logout } = useAuthStore();
-  const {role}  = useAuthStore();
+  const { products, fetchAllProducts, isLoading: isProductLoading } = useProductStore();
+  const { addToCart, isLoading: isCartLoading } = useCartStore();
+    const navigate = useNavigate();
+  const { authUser, logout } = useAuthStore();
   const [showMenu, setShowMenu] = useState(false);
 
   useEffect(() => {
@@ -37,11 +39,28 @@ const Dashboard = () => {
     }
   };
 
+  const handleAddToCart = async (product) => {
+    if (!authUser) {
+      alert('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!');
+      navigate('/login');
+      return;
+    }
+    try {
+      console.log('User:', authUser); // Debug user info
+        console.log('Token:', localStorage.getItem('authToken'));
+      await addToCart(authUser.userName, product.id, product.productName, product.price, 1);
+      alert('Đã thêm sản phẩm vào giỏ hàng!');
+    } catch (error) {
+      alert('Lỗi khi thêm sản phẩm vào giỏ hàng!');
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     fetchAllProducts();
   }, [fetchAllProducts]);
 
-  if (isLoading) {
+  if (isProductLoading || isCartLoading) {
     return (
       <div className="loading-container">
         <div className="spinner"></div>
@@ -120,7 +139,10 @@ const Dashboard = () => {
                 <div className="product-info">
                   <p className="product-price">${product.price}</p>
                 </div>
-                <button className="add-to-cart-button">
+                <button
+                  className="add-to-cart-button"
+                  onClick={() => handleAddToCart(product)}
+                >
                   <span className="cart-icon">🛒</span>
                   <span>Thêm vào giỏ hàng</span>
                 </button>

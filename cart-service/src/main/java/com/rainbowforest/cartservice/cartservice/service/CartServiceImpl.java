@@ -41,4 +41,9 @@ public class CartServiceImpl implements CartService {
 
         return cartRepository.save(cart);
     }
+
+    @Override
+    public Cart getCartByUserName(String userName) {
+        return cartRepository.findByUserName(userName);
+    }
 }

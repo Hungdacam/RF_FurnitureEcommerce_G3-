@@ -65,6 +65,15 @@ public class RouteConfig {
                                                                                 .setName("recommendationServiceCircuitBreaker")
                                                                                 .setFallbackUri("forward:/fallback/recommendation")))
                                                 .uri("lb://product-recommendation-service"))
+                                .route("cart-service", r -> r
+                                                .path("/api/cart/**")
+                                                .filters(f -> f
+                                                                .rewritePath("/api/cart/(?<segment>.*)",
+                                                                                "/api/cart/${segment}")
+                                                                .circuitBreaker(config -> config
+                                                                                .setName("cartServiceCircuitBreaker")
+                                                                                .setFallbackUri("forward:/fallback/cart")))
+                                                .uri("lb://cart-service"))
                                 .build();
         }
 }

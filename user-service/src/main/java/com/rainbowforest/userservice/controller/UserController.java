@@ -3,12 +3,18 @@ package com.rainbowforest.userservice.controller;
 import com.rainbowforest.userservice.entity.User;
 import com.rainbowforest.userservice.http.header.HeaderGenerator;
 import com.rainbowforest.userservice.service.UserService;
+import com.rainbowforest.userservice.dto.UserDto;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import javax.servlet.http.HttpServletRequest;
+
 import java.util.List;
+
+import com.rainbowforest.userservice.dto.UserDetailsDto;
 
 @RestController
 public class UserController {
@@ -48,11 +54,31 @@ public class UserController {
         		HttpStatus.NOT_FOUND);
     }
 @GetMapping(value = "/users/by-username")
-public ResponseEntity<User> getUserByUserName(@RequestParam("username") String userName) {
+public ResponseEntity<UserDto> getUserByUserName(@RequestParam("username") String userName) {
     User user = userService.getUserByName(userName);
     if (user != null) {
+        UserDto userDto = new UserDto();
+        userDto.setId(user.getId());
+        userDto.setUserName(user.getUserName());
+        userDto.setRoleName(user.getRole().getRoleName());
+        
+
+        if (user.getUserDetails() != null) {
+            UserDetailsDto detailsDto = new UserDetailsDto();
+            detailsDto.setFirstName(user.getUserDetails().getFirstName());
+            detailsDto.setLastName(user.getUserDetails().getLastName());
+            detailsDto.setEmail(user.getUserDetails().getEmail());
+            detailsDto.setPhoneNumber(user.getUserDetails().getPhoneNumber());
+            detailsDto.setStreet(user.getUserDetails().getStreet());
+            detailsDto.setStreetNumber(user.getUserDetails().getStreetNumber());
+            detailsDto.setZipCode(user.getUserDetails().getZipCode());
+            detailsDto.setLocality(user.getUserDetails().getLocality());
+            detailsDto.setCountry(user.getUserDetails().getCountry());
+            userDto.setUserDetails(detailsDto);
+        }
+
         return new ResponseEntity<>(
-            user,
+            userDto,
             headerGenerator.getHeadersForSuccessGetMethod(),
             HttpStatus.OK
         );
@@ -92,4 +118,5 @@ public ResponseEntity<User> getUserByUserName(@RequestParam("username") String u
 		}
     	return new ResponseEntity<User>(HttpStatus.BAD_REQUEST);
     }
+	
 }

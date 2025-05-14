@@ -1,6 +1,8 @@
 package com.rainbowforest.cartservice.cartservice.entity;
 
-import jakarta.persistence.Embeddable;
+import javax.persistence.Embeddable;
+
+
 
 @Embeddable
 public class CartItem {

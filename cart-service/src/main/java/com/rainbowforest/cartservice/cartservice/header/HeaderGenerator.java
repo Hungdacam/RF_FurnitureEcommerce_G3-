@@ -1,10 +1,14 @@
-package com.rainbowforest.userservice.http.header;
+package com.rainbowforest.cartservice.cartservice.header;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
+
 
 @Service
 public class HeaderGenerator {
