@@ -14,8 +14,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.filter.CorsFilter;
+
 
 @Configuration
 @EnableWebSecurity
@@ -30,18 +29,7 @@ public class SecurityConfig {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Bean
-    public CorsFilter corsFilter() {
-        org.springframework.web.cors.UrlBasedCorsConfigurationSource source =
-                new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowCredentials(true);
-        config.addAllowedOriginPattern("*"); // Thay vì addAllowedOrigin("*")
-        config.addAllowedHeader("*");
-        config.addAllowedMethod("*");
-        source.registerCorsConfiguration("/**", config);
-        return new CorsFilter(source);
-    }
+
 
 
     @Bean
@@ -49,14 +37,18 @@ public class SecurityConfig {
         http
                 .csrf().disable()
                 .authorizeRequests()
-                .mvcMatchers("/registration", "/login").permitAll()
+                .mvcMatchers("/registration", "/login", "/logout").permitAll()
                 // Sử dụng antMatchers cho các URL có tham số query
                 .mvcMatchers("/users").authenticated()
                 .mvcMatchers("/users/**").authenticated()
                 .anyRequest().authenticated()
                 .and()
                 .sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                // Tắt hành vi logout mặc định của Spring Security
+                .logout().disable(); // Vô hiệu hóa cấu hình logout mặc định
+
 
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

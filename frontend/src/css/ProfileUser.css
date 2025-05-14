@@ -1,0 +1,71 @@
+h1 {
+    color: #ff4500; 
+    font-size: 2.5em; 
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(90deg, #ff7e5f, #feb47b);
+    padding: 10px 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(255, 69, 0, 0.3); 
+    text-transform: uppercase; 
+    letter-spacing: 2px; 
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin: 20px;
+    padding: 20px;
+    background: linear-gradient(135deg, #e0c3fc, #8ec5fc); /* Gradient tím nhạt đến xanh nhạt */
+    border-radius: 15px; 
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2); /* Bóng mờ tinh tế */
+    max-width: 500px; 
+    margin-left: auto;
+    margin-right: auto; 
+}
+
+.user-info p {
+    margin: 10px 0;
+    font-size: 1.1em; /* Tăng kích thước chữ */
+    color: #333; /* Màu chữ tối */
+    padding: 8px 12px;
+    background-color: #fff; /* Nền trắng cho từng dòng */
+    border-radius: 5px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Hiệu ứng hover */
+}
+
+.user-info p:hover {
+    transform: translateY(-2px); /* Nhấc lên khi hover */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Bóng khi hover */
+}
+
+.user-info p strong {
+    color: #ff4500; /* Màu cam cho chữ in đậm */
+    margin-right: 10px;
+}
+
+button {
+    padding: 12px 25px;
+    font-size: 1em;
+    color: #fff;
+    background: linear-gradient(90deg, #ff5e62, #ff9966); /* Gradient đỏ sang cam */
+    border: none;
+    border-radius: 25px; /* Bo góc nút */
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(255, 94, 98, 0.4);
+    transition: background 0.3s ease, transform 0.3s ease;
+    margin-top: 20px;
+}
+
+button:hover {
+    background: linear-gradient(90deg, #ff8a00, #e52e71); /* Gradient mới khi hover */
+    transform: scale(1.05); /* Phóng to khi hover */
+    box-shadow: 0 6px 20px rgba(255, 138, 0, 0.5);
+}
+
+button:active {
+    transform: scale(0.98); /* Nhỏ lại khi click */
+}
