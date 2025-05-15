@@ -66,9 +66,9 @@ const useAuthStore = create((set) => ({
         set({
           authUser: {
             ...userRes.data,
-            roles: [userRes.data.role?.roleName], // Đảm bảo luôn có mảng roles
+            roles: [userRes.data.roleName], 
           },
-          role: res.data.roles, // nếu muốn giữ
+          role: res.data.roles,
         });
         toast.success('Đăng nhập thành công!');
         navigate('/dashboard');
@@ -82,7 +82,6 @@ const useAuthStore = create((set) => ({
       set({ isLoggingIn: false });
     }
   },
-
   logout: async (navigate) => {
     set({ isLoggingOut: true });
     try {
@@ -94,7 +93,7 @@ const useAuthStore = create((set) => ({
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Lỗi khi đăng xuất';
       toast.error(errorMessage);
-    } finally {
+    } finally { 
       set({ isLoggingOut: false });
     }
   },
