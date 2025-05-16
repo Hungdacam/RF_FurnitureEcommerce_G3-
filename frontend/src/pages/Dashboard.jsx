@@ -4,13 +4,13 @@ import useProductStore from '../stores/useProductStore';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/useAuthStore';
 
-import useCartStore from '../stores/\buseCartStore';
+import useCartStore from '../stores/useCartStore';
 
 import '../css/Dasboard.css';
 const Dashboard = () => {
   const { products, fetchAllProducts, isLoading: isProductLoading } = useProductStore();
   const { addToCart, isLoading: isCartLoading } = useCartStore();
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const { authUser, logout } = useAuthStore();
   const [showMenu, setShowMenu] = useState(false);
 
@@ -47,7 +47,7 @@ const Dashboard = () => {
     }
     try {
       console.log('User:', authUser); // Debug user info
-        console.log('Token:', localStorage.getItem('authToken'));
+      console.log('Token:', localStorage.getItem('authToken'));
       await addToCart(authUser.userName, product.id, product.productName, product.price, 1);
       alert('Đã thêm sản phẩm vào giỏ hàng!');
     } catch (error) {
@@ -80,7 +80,18 @@ const Dashboard = () => {
             <ul className="nav-list">
               <li className="nav-item active"><a href="#" className="nav-link">Trang chủ</a></li>
               <li className="nav-item"><a href="#" className="nav-link">Danh mục sản phẩm</a></li>
-              <li className="nav-item"><a href="#" className="nav-link">Giỏ hàng</a></li>
+              <li className="nav-item">
+                <a
+                  href="#"
+                  className="nav-link"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate('/cart');
+                  }}
+                >
+                  Giỏ hàng
+                </a>
+              </li>
               <li className="nav-item"><a href="#" className="nav-link">About Us</a></li>
               <li>
                 {authUser?.roles?.includes('ROLE_ADMIN') && (

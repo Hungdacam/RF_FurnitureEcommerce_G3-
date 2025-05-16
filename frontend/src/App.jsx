@@ -7,6 +7,8 @@ import Dashboard from './pages/Dashboard';
 import ProductManagement from './pages/ProductManagement';
 import DetailProduct from './pages/DetailProduct';
 import ProfileUser from './pages/ProfileUser';
+import Cart from './pages/Cart';
+
 const App = () => {
   return (
     <Router>
@@ -19,6 +21,7 @@ const App = () => {
         <Route path="/product-management" element={<ProductManagement />} />
         <Route path="/product-detail/:productId" element={<DetailProduct />} />
        <Route path="/profileUser" element={<ProfileUser />} />
+      <Route path="/cart" element={<Cart />} />
       </Routes>
     </Router>
   );

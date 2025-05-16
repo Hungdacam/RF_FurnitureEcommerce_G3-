@@ -17,11 +17,33 @@ const useCartStore = create((set) => ({
   }
             });
             set({ cart: response.data, isLoading: false });
+            console.log('Giỏ hàng là:', response.data);
+            console.log('Loading là:', isLoading);
             return response.data;
         } catch (error) {
              set({ error: error.message, isLoading: false });
               throw error;
         }
+    },
+
+    getCart: async (userName) => {
+        set({isLoading: true, error: null});
+        try {
+            const token = localStorage.getItem('authToken');
+            const response = await axiosCart.get('/get', {
+                params: {userName},
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+            }
+        )
+        set({cart: response.data, isLoading: false});
+        return response.data;
+        } catch (error) {
+            set({ error: error.message, isLoading: false });
+      throw error;
+        }
+    
     }
 }))
 
