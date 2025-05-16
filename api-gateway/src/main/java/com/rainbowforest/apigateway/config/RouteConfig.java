@@ -42,8 +42,8 @@ public class RouteConfig {
                                 .route("product-catalog-service", r -> r
                                                 .path("/api/catalog/**")
                                                 .filters(f -> f
-                                                                .rewritePath("/api/catalog/(?<segment>.*)",
-                                                                                "/api/catalog/${segment}")
+//                                                                .rewritePath("/api/catalog/(?<segment>.*)",
+//                                                                                "/api/catalog/${segment}")
                                                                 .circuitBreaker(config -> config
                                                                                 .setName("catalogServiceCircuitBreaker")
                                                                                 .setFallbackUri("forward:/fallback/catalog")))

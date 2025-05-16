@@ -27,10 +27,10 @@ export default function ProductManagement() {
     description: "",
     price: "",
     quantity: "",
+    imageUrl: "",
   });
   const [imageFile, setImageFile] = useState(null);
   const [errors, setErrors] = useState({});
-
 
   useEffect(() => {
     fetchAllProducts();
@@ -45,19 +45,19 @@ export default function ProductManagement() {
     if (!productData.description.trim())
       newErrors.description = "Mô tả không được để trống";
     if (!productData.price || productData.price <= 0)
-      newErrors.price = "Giá không được để trống";
+      newErrors.price = "Giá phải lớn hơn 0";
     if (!productData.quantity || productData.quantity < 0)
-      newErrors.quantity = "Số lượng không được để trống";
+      newErrors.quantity = "Số lượng không được âm";
     if (!imageFile) newErrors.image = "Hình ảnh không được để trống";
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0; 
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setProductData({ ...productData, [name]: value });
- 
+
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -69,16 +69,38 @@ export default function ProductManagement() {
   };
 
   const handleImageChange = (e) => {
-    setImageFile(e.target.files[0]);
-    
-    if (errors.image) {
-      setErrors((prev) => ({ ...prev, image: "" }));
+    const file = e.target.files[0];
+    if (file) {
+      // Kiểm tra định dạng file
+      const allowedFormats = ['image/jpeg', 'image/png', 'image/gif'];
+      if (!allowedFormats.includes(file.type)) {
+        setErrors((prev) => ({
+          ...prev,
+          image: 'Chỉ hỗ trợ định dạng JPEG, PNG hoặc GIF',
+        }));
+        return;
+      }
+
+      // Kiểm tra kích thước file
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        setErrors((prev) => ({
+          ...prev,
+          image: 'Kích thước ảnh không được vượt quá 5MB',
+        }));
+        return;
+      }
+
+      setImageFile(file);
+      if (errors.image) {
+        setErrors((prev) => ({ ...prev, image: "" }));
+      }
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return; 
+    if (!validateForm()) return;
 
     await addProduct(productData, imageFile);
     setShowForm(false);
@@ -90,7 +112,7 @@ export default function ProductManagement() {
       quantity: "",
     });
     setImageFile(null);
-    setErrors({}); 
+    setErrors({});
     fetchAllProducts();
   };
 
@@ -112,6 +134,7 @@ export default function ProductManagement() {
       description: product.description,
       price: product.price,
       quantity: product.quantity,
+      imageUrl: product.imageUrl,
     });
   };
 
@@ -125,6 +148,7 @@ export default function ProductManagement() {
       description: "",
       price: "",
       quantity: "",
+      imageUrl: "",
     });
     setImageFile(null);
     fetchAllProducts();
@@ -138,6 +162,7 @@ export default function ProductManagement() {
       description: "",
       price: "",
       quantity: "",
+      imageUrl: "",
     });
     setImageFile(null);
   };
@@ -230,7 +255,11 @@ export default function ProductManagement() {
                         id="edit_image"
                         name="image"
                         onChange={handleImageChange}
+                        accept="image/jpeg,image/png,image/gif"
                       />
+                      {errors.image && (
+                        <span className="error-message">{errors.image}</span>
+                      )}
                     </div>
                     <div className="edit-buttons">
                       <button type="submit" className="update-button">
@@ -356,6 +385,7 @@ export default function ProductManagement() {
               id="image"
               name="image"
               onChange={handleImageChange}
+              accept="image/jpeg,image/png,image/gif"
             />
             {errors.image && (
               <span className="error-message">{errors.image}</span>
