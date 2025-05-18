@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  sql-server:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: "Thang191042:"
+      MSSQL_PID: Developer
+      MSSQL_DATA_DIR: /var/opt/mssql/data
+      MSSQL_LOG_DIR: /var/opt/mssql/log
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql-server-data:/var/opt/mssql
+    restart: on-failure
+    cap_add:
+      - SYS_PTRACE
+    networks:
+      - app-network
+
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - app-network
+
+  apigateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: apigateway
+    ports:
+      - "8900:8900"
+    depends_on:
+      - eureka-server
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+    networks:
+      - app-network
+
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    ports:
+      - "8811:8811"
+    depends_on:
+      - sql-server
+      - eureka-server
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:sqlserver://sql-server:1433;databaseName=users;encrypt=true;trustServerCertificate=true;characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: sa
+      SPRING_DATASOURCE_PASSWORD: "Thang191042:"
+    networks:
+      - app-network
+
+  product-catalog-service:
+    build:
+      context: ./product-catalog-service
+      dockerfile: Dockerfile
+    container_name: product-catalog-service
+    ports:
+      - "8810:8810"
+    depends_on:
+      - sql-server
+      - eureka-server
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:sqlserver://sql-server:1433;databaseName=product_catalog;encrypt=true;trustServerCertificate=true;characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: sa
+      SPRING_DATASOURCE_PASSWORD: "Thang191042:"
+    networks:
+      - app-network
+
+  cart-service:
+    build:
+      context: ./cart-service
+      dockerfile: Dockerfile
+    container_name: cart-service
+    ports:
+      - "8902:8902"
+    depends_on:
+      - sql-server
+      - eureka-server
+      - product-catalog-service
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:sqlserver://sql-server:1433;databaseName=cart;encrypt=true;trustServerCertificate=true;characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: sa
+      SPRING_DATASOURCE_PASSWORD: "Thang191042:"
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - apigateway
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  sql-server-data:

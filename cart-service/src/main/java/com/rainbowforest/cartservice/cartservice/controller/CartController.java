@@ -26,7 +26,7 @@ public class CartController {
     @Autowired
     private HeaderGenerator headerGenerator;
 
-    @PostMapping("/add")
+     @PostMapping("/add")
     private ResponseEntity<Cart> addToCart(
             @RequestParam String userName,
             @RequestParam Long productId,
@@ -35,8 +35,13 @@ public class CartController {
             @RequestParam int quantity,
             HttpServletRequest request) {
         try {
+            String jwt = request.getHeader("Authorization");
+            if (jwt == null || !jwt.startsWith("Bearer ")) {
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
+            jwt = jwt.substring(7); // Bỏ "Bearer "
             System.out.println("Received add to cart request for user: " + userName);
-            Cart cart = cartService.addToCart(userName, productId, productName, price, quantity);
+            Cart cart = cartService.addToCart(userName, productId, productName, price, quantity, jwt);
             return new ResponseEntity<>(
                     cart,
                     headerGenerator.getHeadersForSuccessPostMethod(request, cart.getId()),
