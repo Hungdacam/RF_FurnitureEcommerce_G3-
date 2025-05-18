@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
@@ -21,11 +22,10 @@ public class FallbackController {
         return Mono.just(ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response));
     }
 
-    @GetMapping("/catalog")
-    public Mono<ResponseEntity<Map<String, String>>> catalogServiceFallback() {
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Product Catalog Service is currently unavailable. Please try again later.");
-        return Mono.just(ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response));
+    @RequestMapping(value = "/catalog", method = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT })
+    public ResponseEntity<String> catalogFallback() {
+        System.out.println(">>> Gateway: Fallback for catalog service triggered");
+        return new ResponseEntity<>("Catalog service is temporarily unavailable", HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     @GetMapping("/order")

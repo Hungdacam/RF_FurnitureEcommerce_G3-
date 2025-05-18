@@ -21,7 +21,7 @@ public class AdminProductController {
 
     @Autowired
     private ProductService productService;
-    
+
     @Autowired
     private HeaderGenerator headerGenerator;
 
@@ -30,16 +30,12 @@ public class AdminProductController {
 
     public AdminProductController() {
         cloudinary = new Cloudinary(ObjectUtils.asMap(
-            "cloud_name", "dbjqhaayj",
-            "api_key", "768372645321588",  
-            "api_secret", "Kji8OdwCTNIcOTbP4erdeBuYmhU" 
-        ));
+                "cloud_name", "dbjqhaayj",
+                "api_key", "768372645321588",
+                "api_secret", "Kji8OdwCTNIcOTbP4erdeBuYmhU"));
     }
-	@RequestMapping(value = "/**", method = RequestMethod.OPTIONS)
-    public ResponseEntity<Void> handleOptions() {
-        return ResponseEntity.ok().build();
-    }
-    @PostMapping(value = "/products", consumes = {"multipart/form-data"})
+
+    @PostMapping(value = "/products", consumes = { "multipart/form-data" })
     public ResponseEntity<Product> addProduct(
             @RequestPart("product_name") String productName,
             @RequestPart("category") String category,
@@ -48,13 +44,13 @@ public class AdminProductController {
             @RequestPart("quantity") String quantity,
             @RequestPart("image") MultipartFile image,
             HttpServletRequest request) {
-                System.out.println(">>> Received POST addProduct");
-
+        System.out.println(">>> Received POST /admin/products");
+        System.out.println("Content-Type: " + request.getContentType());
         try {
             // Upload hình ảnh lên Cloudinary
             Map uploadResult = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.asMap(
-                "upload_preset", "KTPM_G3" 
-            ));
+                    "upload_preset", "KTPM_G3"));
+            System.out.println(">>> Cloudinary upload result: " + uploadResult);
             String imageUrl = (String) uploadResult.get("secure_url");
 
             // Tạo đối tượng Product
@@ -69,20 +65,20 @@ public class AdminProductController {
             // Lưu sản phẩm vào database
             productService.addProduct(product);
 
+            System.out.println(">>> Product added successfully, ID: " + product.getId());
             return new ResponseEntity<Product>(
-                product,
-                headerGenerator.getHeadersForSuccessPostMethod(request, product.getId()),
-                HttpStatus.CREATED
-            );
+                    product,
+                    headerGenerator.getHeadersForSuccessPostMethod(request, product.getId()),
+                    HttpStatus.CREATED);
         } catch (Exception e) {
+            System.err.println(">>> Error adding product: " + e.getMessage());
             e.printStackTrace();
             return new ResponseEntity<Product>(
-                headerGenerator.getHeadersForError(),
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
+                    headerGenerator.getHeadersForError(),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    
+
     @DeleteMapping(value = "/products/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable("id") Long id) {
         Product product = productService.getProductById(id);
@@ -90,55 +86,53 @@ public class AdminProductController {
             try {
                 productService.deleteProduct(id);
                 return new ResponseEntity<Void>(
-                    headerGenerator.getHeadersForSuccessGetMethod(),
-                    HttpStatus.OK
-                );
+                        headerGenerator.getHeadersForSuccessGetMethod(),
+                        HttpStatus.OK);
             } catch (Exception e) {
                 e.printStackTrace();
                 return new ResponseEntity<Void>(
-                    headerGenerator.getHeadersForError(),
-                    HttpStatus.INTERNAL_SERVER_ERROR
-                );
+                        headerGenerator.getHeadersForError(),
+                        HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }
-        return new ResponseEntity<Void>(headerGenerator.getHeadersForError(), HttpStatus.NOT_FOUND);      
+        return new ResponseEntity<Void>(headerGenerator.getHeadersForError(), HttpStatus.NOT_FOUND);
     }
 
     @PutMapping(value = "/products/{id}", consumes = { "multipart/form-data" })
-public ResponseEntity<Product> updateProduct(
-        @PathVariable("id") Long id,
-        @RequestPart("product_name") String productName,
-        @RequestPart("category") String category,
-        @RequestPart("description") String description,
-        @RequestPart("price") String price,
-        @RequestPart("quantity") String quantity,
-        @RequestPart(value = "image", required = false) MultipartFile image) {
+    public ResponseEntity<Product> updateProduct(
+            @PathVariable("id") Long id,
+            @RequestPart("product_name") String productName,
+            @RequestPart("category") String category,
+            @RequestPart("description") String description,
+            @RequestPart("price") String price,
+            @RequestPart("quantity") String quantity,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
 
-    try {
-        Product existingProduct = productService.getProductById(id);
-        if (existingProduct == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        try {
+            Product existingProduct = productService.getProductById(id);
+            if (existingProduct == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            String imageUrl = existingProduct.getImageUrl(); // Giữ nguyên URL hình ảnh cũ
+            if (image != null && !image.isEmpty()) {
+                Map uploadResult = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.asMap(
+                        "upload_preset", "KTPM_G3"));
+                imageUrl = (String) uploadResult.get("secure_url");
+            }
+
+            existingProduct.setProductName(productName);
+            existingProduct.setCategory(category);
+            existingProduct.setDescription(description);
+            existingProduct.setPrice(new BigDecimal(price));
+            existingProduct.setQuantity(Integer.parseInt(quantity));
+            existingProduct.setImageUrl(imageUrl);
+
+            Product updatedProduct = productService.updateProduct(id, existingProduct);
+            return new ResponseEntity<>(updatedProduct, HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-        String imageUrl = existingProduct.getImageUrl(); // Giữ nguyên URL hình ảnh cũ
-        if (image != null && !image.isEmpty()) {
-            Map uploadResult = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.asMap(
-                    "upload_preset", "KTPM_G3"));
-            imageUrl = (String) uploadResult.get("secure_url");
-        }
-
-        existingProduct.setProductName(productName);
-        existingProduct.setCategory(category);
-        existingProduct.setDescription(description);
-        existingProduct.setPrice(new BigDecimal(price));
-        existingProduct.setQuantity(Integer.parseInt(quantity));
-        existingProduct.setImageUrl(imageUrl);
-
-        Product updatedProduct = productService.updateProduct(id, existingProduct);
-        return new ResponseEntity<>(updatedProduct, HttpStatus.OK);
-    } catch (Exception e) {
-        e.printStackTrace();
-        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
-}
 }

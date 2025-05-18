@@ -9,9 +9,7 @@ export const axiosInstance = axios.create({
 
 export  const axiosCatalog = axios.create({
   baseURL: 'http://localhost:8900/api/catalog', // Product Catalog Service
-  headers: {
-    'Content-Type': 'application/json',
-  },
+ 
 });
 
 export const axiosCart = axios.create({
@@ -34,10 +32,14 @@ axiosInstance.interceptors.request.use(
 );
 axiosCatalog.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('authToken'); // Lấy token từ localStorage
+    const token = localStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    console.log('Request URL:', config.url);
+    console.log('Request Method:', config.method);
+    console.log('Request Headers:', config.headers);
+    console.log('Request Data:', config.data);
     return config;
   },
   (error) => Promise.reject(error)
