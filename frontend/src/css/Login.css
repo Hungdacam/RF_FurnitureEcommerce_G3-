@@ -1,0 +1,74 @@
+/* src/pages/Login.css */
+
+.login-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  width: 200vh;
+}
+
+.login-box {
+  margin-left: 650px;
+  width: 400px;
+  padding: 30px;
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 20px;
+}
+
+.login-title {
+  text-align: center;
+}
+
+.login-input-container {
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: center;
+}
+
+.login-input {
+  width: 90%;
+  padding: 8px;
+  margin-top: 5px;
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.5);
+  border: 1px solid #fff;
+}
+
+.login-button-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.login-button {
+  width: 50%;
+  padding: 10px;
+  background-color: #598176;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 10px;
+}
+
+
+.signup-text {
+  margin-top: 15px;
+  text-align: center;
+}
+
+.signup-link {
+  color: #598176;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.signup-link:hover {
+  color: #1a3f3a;
+  transform: scale(1.05);
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}

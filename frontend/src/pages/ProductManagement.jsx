@@ -51,13 +51,13 @@ export default function ProductManagement() {
     if (!imageFile) newErrors.image = "Hình ảnh không được để trống";
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0; 
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setProductData({ ...productData, [name]: value });
- 
+
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -70,7 +70,7 @@ export default function ProductManagement() {
 
   const handleImageChange = (e) => {
     setImageFile(e.target.files[0]);
-    
+
     if (errors.image) {
       setErrors((prev) => ({ ...prev, image: "" }));
     }
@@ -78,7 +78,7 @@ export default function ProductManagement() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return; 
+    if (!validateForm()) return;
 
     await addProduct(productData, imageFile);
     setShowForm(false);
@@ -90,7 +90,7 @@ export default function ProductManagement() {
       quantity: "",
     });
     setImageFile(null);
-    setErrors({}); 
+    setErrors({});
     fetchAllProducts();
   };
 
@@ -143,229 +143,246 @@ export default function ProductManagement() {
   };
 
   return (
-    <div className="product-management-container">
-      <h1 className="title">Quản Lý Sản Phẩm</h1>
-      <div className="button-group">
-        <button
-          className="add-product-button"
-          onClick={() => setShowForm(!showForm)}
-        >
-          {showForm ? "Đóng Form" : "Thêm Sản Phẩm Mới"}
+    <div className="product-management-wrapper">
+      <div className="product-management-container">
+        <button className="back-button" onClick={() => window.history.back()}>
+          ← Quay lại
         </button>
-        <button
-          className="view-products-button"
-          onClick={() => setShowProductList(!showProductList)}
-        >
-          {showProductList ? "Ẩn Danh Sách" : "Danh Sách Sản Phẩm"}
-        </button>
-      </div>
-
-      {showProductList && (
-        <div className="product-list">
-          {products.length === 0 ? (
-            <p className="no-products">Không có sản phẩm nào.</p>
-          ) : (
-            products.map((product) => (
-              <div key={product.id} className="product-item">
-                {editProductId === product.id ? (
-                  <form className="edit-product-form" onSubmit={handleUpdate}>
-                    <div className="form-group">
-                      <label htmlFor="edit_product_name">Tên sản phẩm:</label>
-                      <input
-                        type="text"
-                        id="edit_product_name"
-                        name="product_name"
-                        value={editProductData.product_name}
-                        onChange={handleEditInputChange}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="edit_category">Danh mục:</label>
-                      <input
-                        type="text"
-                        id="edit_category"
-                        name="category"
-                        value={editProductData.category}
-                        onChange={handleEditInputChange}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="edit_description">Mô tả:</label>
-                      <textarea
-                        id="edit_description"
-                        name="description"
-                        value={editProductData.description}
-                        onChange={handleEditInputChange}
-                        required
-                      ></textarea>
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="edit_price">Giá:</label>
-                      <input
-                        type="number"
-                        id="edit_price"
-                        name="price"
-                        value={editProductData.price}
-                        onChange={handleEditInputChange}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="edit_quantity">Số lượng:</label>
-                      <input
-                        type="number"
-                        id="edit_quantity"
-                        name="quantity"
-                        value={editProductData.quantity}
-                        onChange={handleEditInputChange}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="edit_image">Hình ảnh (tùy chọn):</label>
-                      <input
-                        type="file"
-                        id="edit_image"
-                        name="image"
-                        onChange={handleImageChange}
-                      />
-                    </div>
-                    <div className="edit-buttons">
-                      <button type="submit" className="update-button">
-                        <span className="button-icon">✔</span> Lưu Cập Nhật
-                      </button>
-                      <button
-                        type="button"
-                        className="cancel-button"
-                        onClick={handleCancelEdit}
-                      >
-                        <span className="button-icon">✖</span> Hủy
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <>
-                    <img
-                      src={product.imageUrl}
-                      alt={product.productName}
-                      className="product-image"
-                    />
-                    <h3 className="product-name">{product.productName}</h3>
-                    <p className="product-category">
-                      Danh mục: {product.category}
-                    </p>
-                    <p className="product-description">{product.description}</p>
-                    <p className="product-price">Giá: ${product.price}</p>
-                    <p className="product-quantity">
-                      Số lượng: {product.quantity}
-                    </p>
-                    <div className="product-actions">
-                      <button
-                        className="edit-button"
-                        onClick={() => handleEdit(product)}
-                      >
-                        <span className="button-icon">✎</span> Cập Nhật
-                      </button>
-                      <button
-                        className="delete-button"
-                        onClick={() => handleDelete(product.id)}
-                      >
-                        <span className="button-icon">🗑</span> Xóa
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
-      {showForm && (
-        <form className="product-form" onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="product_name">Tên sản phẩm:</label>
-            <input
-              type="text"
-              id="product_name"
-              name="product_name"
-              value={productData.product_name}
-              onChange={handleInputChange}
-            />
-            {errors.product_name && (
-              <span className="error-message">{errors.product_name}</span>
-            )}
-          </div>
-          <div className="form-group">
-            <label htmlFor="category">Danh mục:</label>
-            <input
-              type="text"
-              id="category"
-              name="category"
-              value={productData.category}
-              onChange={handleInputChange}
-            />
-            {errors.category && (
-              <span className="error-message">{errors.category}</span>
-            )}
-          </div>
-          <div className="form-group">
-            <label htmlFor="description">Mô tả:</label>
-            <textarea
-              id="description"
-              name="description"
-              value={productData.description}
-              onChange={handleInputChange}
-            ></textarea>
-            {errors.description && (
-              <span className="error-message">{errors.description}</span>
-            )}
-          </div>
-          <div className="form-group">
-            <label htmlFor="price">Giá:</label>
-            <input
-              type="number"
-              id="price"
-              name="price"
-              value={productData.price}
-              onChange={handleInputChange}
-            />
-            {errors.price && (
-              <span className="error-message">{errors.price}</span>
-            )}
-          </div>
-          <div className="form-group">
-            <label htmlFor="quantity">Số lượng:</label>
-            <input
-              type="number"
-              id="quantity"
-              name="quantity"
-              value={productData.quantity}
-              onChange={handleInputChange}
-            />
-            {errors.quantity && (
-              <span className="error-message">{errors.quantity}</span>
-            )}
-          </div>
-          <div className="form-group">
-            <label htmlFor="image">Hình ảnh:</label>
-            <input
-              type="file"
-              id="image"
-              name="image"
-              onChange={handleImageChange}
-            />
-            {errors.image && (
-              <span className="error-message">{errors.image}</span>
-            )}
-          </div>
-          <button type="submit" className="submit-button" disabled={isLoading}>
-            {isLoading ? "Đang thêm..." : "Thêm Sản Phẩm"}
+        <h1 className="title">Quản Lý Sản Phẩm</h1>
+        <div className="button-group">
+          <button
+            className="add-product-button"
+            onClick={() => {
+              setShowForm((prev) => {
+                const next = !prev;
+                if (next) setShowProductList(false); // Ẩn danh sách khi mở form
+                return next;
+              });
+            }}
+          >
+            {showForm ? "Đóng Form" : "Thêm Sản Phẩm Mới"}
           </button>
-        </form>
-      )}
+          <button
+            className="view-products-button"
+            onClick={() => {
+  setShowProductList((prev) => {
+    const next = !prev;
+    if (next) setShowForm(false); // Ẩn form khi mở danh sách
+    return next;
+  });
+}}
+          >
+            {showProductList ? "Ẩn Danh Sách" : "Danh Sách Sản Phẩm"}
+          </button>
+        </div>
+
+        {showProductList && (
+          <div className="product-list">
+            {products.length === 0 ? (
+              <p className="no-products">Không có sản phẩm nào.</p>
+            ) : (
+              products.map((product) => (
+                <div key={product.id} className="product-item">
+                  {editProductId === product.id ? (
+                    <form className="edit-product-form" onSubmit={handleUpdate}>
+                      <div className="form-group">
+                        <label htmlFor="edit_product_name">Tên sản phẩm:</label>
+                        <input
+                          type="text"
+                          id="edit_product_name"
+                          name="product_name"
+                          value={editProductData.product_name}
+                          onChange={handleEditInputChange}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="edit_category">Danh mục:</label>
+                        <input
+                          type="text"
+                          id="edit_category"
+                          name="category"
+                          value={editProductData.category}
+                          onChange={handleEditInputChange}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="edit_description">Mô tả:</label>
+                        <textarea
+                          id="edit_description"
+                          name="description"
+                          value={editProductData.description}
+                          onChange={handleEditInputChange}
+                          required
+                        ></textarea>
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="edit_price">Giá:</label>
+                        <input
+                          type="number"
+                          id="edit_price"
+                          name="price"
+                          value={editProductData.price}
+                          onChange={handleEditInputChange}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="edit_quantity">Số lượng:</label>
+                        <input
+                          type="number"
+                          id="edit_quantity"
+                          name="quantity"
+                          value={editProductData.quantity}
+                          onChange={handleEditInputChange}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="edit_image">Hình ảnh (tùy chọn):</label>
+                        <input
+                          type="file"
+                          id="edit_image"
+                          name="image"
+                          onChange={handleImageChange}
+                        />
+                      </div>
+                      <div className="edit-buttons">
+                        <button type="submit" className="update-button">
+                          <span className="button-icon">✔</span> Lưu Cập Nhật
+                        </button>
+                        <button
+                          type="button"
+                          className="cancel-button"
+                          onClick={handleCancelEdit}
+                        >
+                          <span className="button-icon">✖</span> Hủy
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <>
+                      <img
+                        src={product.imageUrl}
+                        alt={product.productName}
+                        className="product-image"
+                      />
+                      <h3 className="product-name">{product.productName}</h3>
+                      <p className="product-category">
+                        Danh mục: {product.category}
+                      </p>
+                      <p className="product-description">{product.description}</p>
+                      <p className="product-price">Giá: ${product.price}</p>
+                      <p className="product-quantity">
+                        Số lượng: {product.quantity}
+                      </p>
+                      <div className="product-actions">
+                        <button
+                          className="edit-button"
+                          onClick={() => handleEdit(product)}
+                        >
+                          <span className="button-icon">✎</span> Cập Nhật
+                        </button>
+                        <button
+                          className="delete-button"
+                          onClick={() => handleDelete(product.id)}
+                        >
+                          <span className="button-icon">🗑</span> Xóa
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {showForm && (
+          <form className="product-form" onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="product_name">Tên sản phẩm:</label>
+              <input
+                type="text"
+                id="product_name"
+                name="product_name"
+                value={productData.product_name}
+                onChange={handleInputChange}
+              />
+              {errors.product_name && (
+                <span className="error-message">{errors.product_name}</span>
+              )}
+            </div>
+            <div className="form-group">
+              <label htmlFor="category">Danh mục:</label>
+              <input
+                type="text"
+                id="category"
+                name="category"
+                value={productData.category}
+                onChange={handleInputChange}
+              />
+              {errors.category && (
+                <span className="error-message">{errors.category}</span>
+              )}
+            </div>
+            <div className="form-group">
+              <label htmlFor="description">Mô tả:</label>
+              <textarea
+                id="description"
+                name="description"
+                value={productData.description}
+                onChange={handleInputChange}
+              ></textarea>
+              {errors.description && (
+                <span className="error-message">{errors.description}</span>
+              )}
+            </div>
+            <div className="form-group">
+              <label htmlFor="price">Giá:</label>
+              <input
+                type="number"
+                id="price"
+                name="price"
+                value={productData.price}
+                onChange={handleInputChange}
+              />
+              {errors.price && (
+                <span className="error-message">{errors.price}</span>
+              )}
+            </div>
+            <div className="form-group">
+              <label htmlFor="quantity">Số lượng:</label>
+              <input
+                type="number"
+                id="quantity"
+                name="quantity"
+                value={productData.quantity}
+                onChange={handleInputChange}
+              />
+              {errors.quantity && (
+                <span className="error-message">{errors.quantity}</span>
+              )}
+            </div>
+            <div className="form-group">
+              <label htmlFor="image">Hình ảnh:</label>
+              <input
+                type="file"
+                id="image"
+                name="image"
+                onChange={handleImageChange}
+              />
+              {errors.image && (
+                <span className="error-message">{errors.image}</span>
+              )}
+            </div>
+            <button type="submit" className="submit-button" disabled={isLoading}>
+              {isLoading ? "Đang thêm..." : "Thêm Sản Phẩm"}
+            </button>
+          </form>
+        )}
+      </div>
     </div>
   );
 }

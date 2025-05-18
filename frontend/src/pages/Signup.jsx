@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/useAuthStore';
+import background from '../assets/background.png';
+import { Link } from 'react-router-dom';
+import "../css/Signup.css";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -41,151 +44,50 @@ const Signup = () => {
       locality: formData.locality,
       country: formData.country,
     };
-    await signup({ userName: formData.userName, userPassword: formData.userPassword, userDetails }, navigate);
+    const success = await signup({ userName: formData.userName, userPassword: formData.userPassword, userDetails });
+    if (success) {
+      navigate('/login');
+    }
+
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '0 auto', padding: '20px' }}>
-      <h2>Đăng ký</h2>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '10px' }}>
-          <label htmlFor="userName">Tên người dùng:</label>
-          <input
-            type="text"
-            id="userName"
-            name="userName"
-            value={formData.userName}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label htmlFor="userPassword">Mật khẩu:</label>
-          <input
-            type="password"
-            id="userPassword"
-            name="userPassword"
-            value={formData.userPassword}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label htmlFor="firstName">Họ:</label>
-          <input
-            type="text"
-            id="firstName"
-            name="firstName"
-            value={formData.firstName}
-            onChange={handleChange}
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label htmlFor="lastName">Tên:</label>
-          <input
-            type="text"
-            id="lastName"
-            name="lastName"
-            value={formData.lastName}
-            onChange={handleChange}
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label htmlFor="email">Email:</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label htmlFor="phoneNumber">Số điện thoại:</label>
-          <input
-            type="text"
-            id="phoneNumber"
-            name="phoneNumber"
-            value={formData.phoneNumber}
-            onChange={handleChange}
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label htmlFor="street">Đường:</label>
-          <input
-            type="text"
-            id="street"
-            name="street"
-            value={formData.street}
-            onChange={handleChange}
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label htmlFor="streetNumber">Số nhà:</label>
-          <input
-            type="text"
-            id="streetNumber"
-            name="streetNumber"
-            value={formData.streetNumber}
-            onChange={handleChange}
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label htmlFor="zipCode">Mã bưu điện:</label>
-          <input
-            type="text"
-            id="zipCode"
-            name="zipCode"
-            value={formData.zipCode}
-            onChange={handleChange}
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label htmlFor="locality">Thành phố:</label>
-          <input
-            type="text"
-            id="locality"
-            name="locality"
-            value={formData.locality}
-            onChange={handleChange}
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label htmlFor="country">Quốc gia:</label>
-          <input
-            type="text"
-            id="country"
-            name="country"
-            value={formData.country}
-            onChange={handleChange}
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={isSigningUp}
-          style={{
-            width: '100%',
-            padding: '10px',
-            backgroundColor: '#007BFF',
-            color: '#fff',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          {isSigningUp ? 'Đang đăng ký...' : 'Đăng ký'}
-        </button>
-      </form>
+    <div
+      className="signup-container"
+      style={{ backgroundImage: `url(${background})` }}
+    >
+      <div className="signup-form-wrapper">
+        <h2>Đăng ký</h2>
+        <form onSubmit={handleSubmit}>
+          {['userName', 'userPassword', 'firstName', 'lastName', 'email', 'phoneNumber'].map((field, index) => (
+            <div className="signup-input-group" key={index}>
+              <input
+                type={field === 'userPassword' ? 'password' : field === 'email' ? 'email' : 'text'}
+                name={field}
+                placeholder={
+                  field === 'userName' ? 'Tên người dùng' :
+                  field === 'userPassword' ? 'Nhập mật khẩu' :
+                  field === 'firstName' ? 'Nhập họ' :
+                  field === 'lastName' ? 'Nhập tên' :
+                  field === 'email' ? 'Nhập email' :
+                  'Nhập số điện thoại'
+                }
+                value={formData[field]}
+                onChange={handleChange}
+                required
+              />
+            </div>
+          ))}
+          <div className="signup-button-wrapper">
+            <button type="submit" className="signup-button" disabled={isSigningUp}>
+              {isSigningUp ? 'Đang đăng ký...' : 'Đăng ký'}
+            </button>
+          </div>
+          <p className="signup-text">
+            Đăng nhập bằng tài khoản? <Link to="/login" className="signup-link">Đăng nhập</Link>
+          </p>
+        </form>
+      </div>
     </div>
   );
 };
