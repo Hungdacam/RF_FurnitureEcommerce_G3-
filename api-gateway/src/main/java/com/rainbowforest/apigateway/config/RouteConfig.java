@@ -39,6 +39,14 @@ public class RouteConfig {
                                                                                 .setName("userServiceCircuitBreaker")
                                                                                 .setFallbackUri("forward:/fallback/user")))
                                                 .uri("lb://user-service"))
+                                .route("user-service-registration", r -> r
+                                                .path("/api/registration")
+                                                .filters(f -> f
+                                                        .rewritePath("/api/registration", "/api/registration")
+                                                        .circuitBreaker(config -> config
+                                                                .setName("userServiceCircuitBreaker")
+                                                                .setFallbackUri("forward:/fallback/user")))
+                                                .uri("lb://user-service"))
                                 .route("product-catalog-service", r -> r
                                                 .path("/api/catalog/**")
                                                 .filters(f -> f

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import useProductStore from '../stores/useProductStore';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/useAuthStore';
@@ -8,34 +8,6 @@ const Dashboard = () => {
   const { products, fetchAllProducts, isLoading } = useProductStore();
   const navigate = useNavigate();
   const { authUser } = useAuthStore();
-  const { logout } = useAuthStore();
-  const {role}  = useAuthStore();
-  const [showMenu, setShowMenu] = useState(false);
-
-  useEffect(() => {
-    const handleClickOutside = () => setShowMenu(false);
-    if (showMenu) document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [showMenu]);
-
-  const handleProfileClick = (e) => {
-    e.stopPropagation();
-    setShowMenu((prev) => !prev);
-  };
-
-  const handleLogout = async () => {
-    if (window.confirm('Bạn có chắc chắn muốn đăng xuất?')) {
-      await logout(navigate);
-    }
-  };
-
-  const handleGoToProductManagement = () => {
-    if (authUser?.roles?.includes('ROLE_ADMIN')) {
-      navigate('/product-management');
-    } else {
-      alert('Bạn không có quyền truy cập vào trang này!');
-    }
-  };
 
   useEffect(() => {
     fetchAllProducts();
@@ -45,94 +17,71 @@ const Dashboard = () => {
     return (
       <div className="loading-container">
         <div className="spinner"></div>
-        <div className="loading-text">Đang tải...</div>
+        <p className="loading-text">Đang tải...</p>
       </div>
     );
   }
 
+  const handleProductClick = (productId) => {
+    navigate(`/product/${productId}`);
+  };
+
+  const handleAddToCart = (e, product) => {
+    e.stopPropagation();
+    // Thêm logic thêm vào giỏ hàng ở đây
+    console.log(`Đã thêm ${product.productName} vào giỏ hàng`);
+    alert(`Đã thêm ${product.productName} vào giỏ hàng`);
+  };
+
   return (
     <div className="page-container">
-      <header className="main-header">
-        <div className="header-container">
-          <div className="logo">
-            <span className="logo-text">WORKAHOLIC SHOP</span>
-          </div>
-          <nav className="main-nav">
-            <ul className="nav-list">
-              <li className="nav-item active"><a href="#" className="nav-link">Trang chủ</a></li>
-              <li className="nav-item"><a href="#" className="nav-link">Danh mục sản phẩm</a></li>
-              <li className="nav-item"><a href="#" className="nav-link">Giỏ hàng</a></li>
-              <li className="nav-item"><a href="#" className="nav-link">About Us</a></li>
-              <li>
-                {authUser?.roles?.includes('ROLE_ADMIN') && (
-                  <button
-                    style={{
-                      padding: '10px 20px',
-                      backgroundColor: '#007bff',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '5px',
-                      cursor: 'pointer',
-                    }}
-                    onClick={handleGoToProductManagement}
-                  >
-                    ĐI ĐẾN TRANG QUẢN LÍ SẢN PHẨM
-                  </button>
-                )}
-              </li>
-            </ul>
-          </nav>
-          <div className="user-profile">
-            <button className="profile-button" onClick={handleProfileClick}>
-              <span className="profile-icon">👤</span>
-            </button>
-            {showMenu && (
-              <div className="profile-menu" style={{
-                position: 'absolute', right: 0, top: '100%', background: '#fff', border: '1px solid #ccc', borderRadius: 4, zIndex: 10
-              }}>
-                <button style={{ display: 'block', width: '100%' }} onClick={() => { setShowMenu(false); navigate('/profileUser'); }}>
-                  Xem thông tin cá nhân
-                </button>
-                <button style={{ display: 'block', width: '100%' }} onClick={handleLogout}>
-                  Đăng xuất
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
       <div className="container">
-        <h1 className="title">DANH SÁCH SẢN PHẨM</h1>
+        <h1 className="title">Danh sách sản phẩm</h1>
         <div className="product-grid">
-          {products.map((product) => (
-            <div key={product.id} className="product-card">
-              <div className="product-image-container">
-                <img
-                  src={product.imageUrl}
-                  alt={product.productName}
-                  className="product-image"
-                  onError={(e) => (e.target.src = 'https://via.placeholder.com/150')}
-                />
-              </div>
-              <div className="product-details">
-                <h2 className="product-name">{product.productName}</h2>
-                <div className="product-info">
-                  <p className="product-price">${product.price}</p>
+          {products.length === 0 ? (
+            <p className="no-products">Không có sản phẩm nào.</p>
+          ) : (
+            products.map((product) => (
+              <div 
+                key={product.id} 
+                className="product-card" 
+                onClick={() => handleProductClick(product.id)}
+              >
+                <div className="product-image-container">
+                  <img 
+                    src={product.imageUrl} 
+                    alt={product.productName} 
+                    className="product-image" 
+                  />
                 </div>
-                <button className="add-to-cart-button">
-                  <span className="cart-icon">🛒</span>
-                  <span>Thêm vào giỏ hàng</span>
-                </button>
-                <button
-                  className="add-to-info-button"
-                  onClick={() => navigate(`/product-detail/${product.id}`)}
-                >
-                  <span>Chi tiết sản phẩm</span>
-                </button>
+                <div className="product-details">
+                  <h3 className="product-name">{product.productName}</h3>
+                  <p className="product-category">{product.category}</p>
+                  <div className="product-info">
+                    <p className="product-price">${product.price}</p>
+                    <p className="product-quantity">Còn {product.quantity} sản phẩm</p>
+                  </div>
+                  <div className="product-actions">
+                    <button 
+                      className="view-details-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleProductClick(product.id);
+                      }}
+                    >
+                      Xem chi tiết
+                    </button>
+                    <button 
+                      className="add-to-cart-button"
+                      onClick={(e) => handleAddToCart(e, product)}
+                    >
+                      Thêm vào giỏ
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>
