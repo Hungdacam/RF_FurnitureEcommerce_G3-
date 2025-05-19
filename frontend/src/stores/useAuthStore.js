@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import {axiosInstance} from '../lib/axios';
 import { toast } from 'react-hot-toast';
-
+import useCartStore from './useCartStore';
 const useAuthStore = create((set) => ({
   authUser: null,
   isSigningUp: false,
@@ -39,6 +39,7 @@ const useAuthStore = create((set) => ({
       if (res.data.token) {
         localStorage.setItem('authToken', res.data.token);
         set({ authUser: { userName: res.data.userName, userId: res.data.userId } });
+        await useCartStore.getState().syncLocalCart(res.data.userName);
         toast.success('Đăng ký thành công!');
         navigate('/dashboard');
       } else {
@@ -70,6 +71,7 @@ const useAuthStore = create((set) => ({
           },
           role: res.data.roles,
         });
+        await useCartStore.getState().syncLocalCart(res.data.userName);
         toast.success('Đăng nhập thành công!');
         navigate('/dashboard');
       } else {
@@ -82,18 +84,16 @@ const useAuthStore = create((set) => ({
       set({ isLoggingIn: false });
     }
   },
-  logout: async (navigate) => {
+  logout: async () => {
     set({ isLoggingOut: true });
     try {
-      await axiosInstance.post('/api/logout'); // Gửi yêu cầu POST
       localStorage.removeItem('authToken');
       set({ authUser: null });
       toast.success('Đăng xuất thành công');
-      if (navigate) navigate('/');
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Lỗi khi đăng xuất';
       toast.error(errorMessage);
-    } finally { 
+    } finally {
       set({ isLoggingOut: false });
     }
   },

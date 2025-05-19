@@ -73,10 +73,9 @@ const Dashboard = () => {
     setShowMenu((prev) => !prev);
   };
 
-  const handleLogout = async () => {
-    if (window.confirm('Bạn có chắc chắn muốn đăng xuất?')) {
-      await logout(navigate);
-    }
+const handleLogout = async () => {
+    logout(); // Gọi hàm logout từ store hoặc context của bạn
+    navigate('/login'); // Điều hướng tới trang đăng nhập
   };
 
   const handleGoToProductManagement = () => {
@@ -93,14 +92,21 @@ const Dashboard = () => {
 
   const handleAddToCart = async (product) => {
     if (!authUser) {
-      alert('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!');
-      navigate('/login');
+      try {
+        await addToCart(null, product.id, product.productName, product.price, 1, false);
+        alert('Sản phẩm đã được thêm vào giỏ hàng tạm. Vui lòng đăng nhập để lưu vào giỏ hàng chính thức!');
+        navigate('/login');
+      } catch (error) {
+        alert('Lỗi khi thêm sản phẩm vào giỏ hàng tạm!');
+        console.error(error);
+      }
       return;
+    
     }
     try {
       console.log('User:', authUser);
       console.log('Token:', localStorage.getItem('authToken'));
-      await addToCart(authUser.userName, product.id, product.productName, product.price, 1);
+      await addToCart(authUser.userName, product.id, product.productName, product.price, 1, true);
       alert('Đã thêm sản phẩm vào giỏ hàng!');
     } catch (error) {
       alert('Lỗi khi thêm sản phẩm vào giỏ hàng!');
