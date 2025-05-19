@@ -1,5 +1,7 @@
 package com.rainbowforest.cartservice.cartservice.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -21,7 +23,6 @@ import org.springframework.web.client.HttpServerErrorException;
 
 import com.rainbowforest.cartservice.dto.UserDto;
 
-
 @Service
 public class CartServiceImpl implements CartService {
 
@@ -34,28 +35,25 @@ public class CartServiceImpl implements CartService {
     private static final String API_GATEWAY_URL = "http://localhost:8900/api/catalog";
 
     @Override
-    public Cart addToCart(String userName, Long productId, String productName, double price, int quantity, String jwtToken) {
-        // Lấy thông tin sản phẩm từ product-catalog-service
+    public Cart addToCart(String userName, Long productId, String productName, double price, int quantity,
+            String jwtToken) {
         ProductDTO product = restTemplate.getForObject(
-            API_GATEWAY_URL + "/products/" + productId,
-            ProductDTO.class
-        );
+                API_GATEWAY_URL + "/products/" + productId,
+                ProductDTO.class);
         if (product == null || product.getQuantity() < quantity) {
-            throw new RuntimeException("Số lượng sản phẩm không đủ!");
+            throw new RuntimeException("Sản phẩm không tồn tại hoặc số lượng không đủ!");
         }
 
-        // Gọi user-service qua API Gateway để xác thực user, gửi kèm JWT
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + jwtToken);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
         try {
             ResponseEntity<UserDto> userResponse = restTemplate.exchange(
-                "http://localhost:8900/api/users/by-username?username=" + userName,
-                HttpMethod.GET,
-                entity,
-                UserDto.class
-            );
+                    "http://localhost:8900/api/users/by-username?username=" + userName,
+                    HttpMethod.GET,
+                    entity,
+                    UserDto.class);
             if (!userResponse.getStatusCode().is2xxSuccessful() || userResponse.getBody() == null) {
                 throw new RuntimeException("Không xác thực được user!");
             }
@@ -80,25 +78,75 @@ public class CartServiceImpl implements CartService {
                 throw new RuntimeException("Số lượng sản phẩm không đủ!");
             }
             existingItem.setQuantity(newQuantity);
+            existingItem.setAvailable(true);
+            existingItem.setImageUrl(product.getImageUrl()); // Gán imageUrl
         } else {
             CartItem item = new CartItem();
             item.setProductId(productId);
             item.setProductName(productName);
             item.setPrice(price);
             item.setQuantity(quantity);
+            item.setAvailable(true);
+            item.setImageUrl(product.getImageUrl()); // Gán imageUrl
             cart.getItems().add(item);
         }
 
-        // Cập nhật số lượng tồn kho
         updateProductQuantity(productId, product);
 
         return cartRepository.save(cart);
-    
     }
 
     @Override
     public Cart getCartByUserName(String userName) {
-        return cartRepository.findByUserName(userName);
+        Cart cart = cartRepository.findByUserName(userName);
+        if (cart == null) {
+            return null;
+        }
+
+        for (CartItem item : cart.getItems()) {
+            try {
+                System.out.println("Checking product with ID: " + item.getProductId());
+                ResponseEntity<ProductDTO> response = restTemplate.exchange(
+                        API_GATEWAY_URL + "/products/" + item.getProductId(),
+                        HttpMethod.GET,
+                        null,
+                        ProductDTO.class);
+                System.out.println("Response Status: " + response.getStatusCode());
+                System.out.println("Response Body: " + response.getBody());
+                ProductDTO product = response.getBody();
+                if (response.getStatusCode().is2xxSuccessful() && product != null) {
+                    item.setAvailable(true);
+                    item.setOutOfStock(product.getQuantity() == 0);
+                    item.setImageUrl(product.getImageUrl()); // Gán imageUrl
+                    item.setPrice(product.getPrice().doubleValue()); // Cập nhật giá
+                    item.setProductName(product.getProductName()); // Cập nhật tên
+                } else {
+                    item.setAvailable(false);
+                    item.setOutOfStock(false);
+                }
+            } catch (HttpClientErrorException ex) {
+                System.out.println("Error for Product ID: " + item.getProductId() + ", Status: " + ex.getStatusCode());
+                item.setAvailable(false);
+                item.setOutOfStock(false);
+            } catch (Exception e) {
+                System.out.println("Exception for Product ID: " + item.getProductId() + ", Message: " + e.getMessage());
+                item.setAvailable(false);
+                item.setOutOfStock(false);
+            }
+        }
+
+        return cartRepository.save(cart);
+    }
+
+    @Override
+    public void removeProductFromAllCarts(Long productId) {
+        List<Cart> allCarts = cartRepository.findAll();
+        for (Cart cart : allCarts) {
+            boolean modified = cart.getItems().removeIf(item -> item.getProductId().equals(productId));
+            if (modified) {
+                cartRepository.save(cart);
+            }
+        }
     }
 
     @Override
@@ -113,26 +161,43 @@ public class CartServiceImpl implements CartService {
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Sản phẩm không có trong giỏ hàng!"));
 
-        ProductDTO product = restTemplate.getForObject(
-            API_GATEWAY_URL + "/products/" + productId,
-            ProductDTO.class
-        );
-        if (product == null) {
-            throw new RuntimeException("Không tìm thấy sản phẩm!");
+        if (newQuantity < 0) {
+            throw new RuntimeException("Số lượng không thể nhỏ hơn 0!");
         }
 
-        // Nếu số lượng mới là 0, xóa sản phẩm khỏi giỏ hàng
+        ProductDTO product = null;
+        if (newQuantity > 0) {
+            try {
+                product = restTemplate.getForObject(
+                        API_GATEWAY_URL + "/products/" + productId,
+                        ProductDTO.class);
+                if (product == null) {
+                    throw new RuntimeException("Sản phẩm không tồn tại!");
+                }
+            } catch (HttpClientErrorException ex) {
+                if (ex.getStatusCode().value() == 404) {
+                    throw new RuntimeException("Sản phẩm không tồn tại!");
+                }
+                throw new RuntimeException("Lỗi khi kiểm tra sản phẩm: " + ex.getMessage());
+            }
+        }
+
         if (newQuantity == 0) {
             cart.getItems().remove(item);
-            // Hoàn lại số lượng tồn kho
-            product.setQuantity(product.getQuantity() + item.getQuantity());
-            updateProductQuantity(productId, product);
+            if (product != null) {
+                product.setQuantity(product.getQuantity() + item.getQuantity());
+                updateProductQuantity(productId, product);
+            }
         } else {
             int quantityDifference = newQuantity - item.getQuantity();
             if (quantityDifference > 0 && product.getQuantity() < quantityDifference) {
                 throw new RuntimeException("Số lượng sản phẩm không đủ!");
             }
             item.setQuantity(newQuantity);
+            item.setAvailable(true);
+            item.setImageUrl(product.getImageUrl()); // Gán imageUrl
+            item.setPrice(product.getPrice().doubleValue()); // Cập nhật giá
+            item.setProductName(product.getProductName()); // Cập nhật tên
             product.setQuantity(product.getQuantity() - quantityDifference);
             updateProductQuantity(productId, product);
         }
@@ -142,14 +207,12 @@ public class CartServiceImpl implements CartService {
 
     private void updateProductQuantity(Long productId, ProductDTO product) {
         try {
-            // Tạo dữ liệu dạng multipart/form-data
             MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
             map.add("product_name", product.getProductName());
             map.add("category", product.getCategory());
             map.add("description", product.getDescription() != null ? product.getDescription() : "");
             map.add("price", product.getPrice().toString());
             map.add("quantity", String.valueOf(product.getQuantity()));
-            // Không cần gửi image vì đây là cập nhật số lượng
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);

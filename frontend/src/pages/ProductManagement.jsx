@@ -30,7 +30,7 @@ export default function ProductManagement() {
   });
   const [imageFile, setImageFile] = useState(null);
   const [errors, setErrors] = useState({});
-
+  const [editErrors, setEditErrors] = useState({});
 
   useEffect(() => {
     fetchAllProducts();
@@ -45,12 +45,41 @@ export default function ProductManagement() {
     if (!productData.description.trim())
       newErrors.description = "Mô tả không được để trống";
     if (!productData.price || productData.price <= 0)
-      newErrors.price = "Giá không được để trống";
-    if (!productData.quantity || productData.quantity < 0)
-      newErrors.quantity = "Số lượng không được để trống";
+      newErrors.price = "Giá phải lớn hơn 0";
+    // Kiểm tra quantity là số nguyên dương hoặc 0
+    if (
+      productData.quantity === "" ||
+      isNaN(productData.quantity) ||
+      !Number.isInteger(Number(productData.quantity)) ||
+      Number(productData.quantity) < 0
+    ) {
+      newErrors.quantity = "Số lượng phải là số nguyên dương";
+    }
     if (!imageFile) newErrors.image = "Hình ảnh không được để trống";
 
     setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateEditForm = () => {
+    const newErrors = {};
+    if (!editProductData.product_name.trim())
+      newErrors.product_name = "Tên sản phẩm không được để trống";
+    if (!editProductData.category.trim())
+      newErrors.category = "Danh mục không được để trống";
+    if (!editProductData.description.trim())
+      newErrors.description = "Mô tả không được để trống";
+    if (!editProductData.price || Number(editProductData.price) <= 0)
+      newErrors.price = "Giá phải lớn hơn 0";
+    if (
+      editProductData.quantity === "" ||
+      isNaN(editProductData.quantity) ||
+      !Number.isInteger(Number(editProductData.quantity)) ||
+      Number(editProductData.quantity) < 0
+    ) {
+      newErrors.quantity = "Số lượng phải là số nguyên dương lớn hơn hoặc bằng 0";
+    }
+    setEditErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
@@ -66,6 +95,10 @@ export default function ProductManagement() {
   const handleEditInputChange = (e) => {
     const { name, value } = e.target;
     setEditProductData({ ...editProductData, [name]: value });
+    // xóa lỗi khi nhập lại
+    if (editErrors[name]) {
+      setEditErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handleImageChange = (e) => {
@@ -117,6 +150,7 @@ export default function ProductManagement() {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    if (!validateEditForm()) return;
     await updateProduct(editProductId, editProductData, imageFile);
     setEditProductId(null);
     setEditProductData({
@@ -127,6 +161,7 @@ export default function ProductManagement() {
       quantity: "",
     });
     setImageFile(null);
+    setEditErrors({});
     fetchAllProducts();
   };
 
@@ -140,6 +175,19 @@ export default function ProductManagement() {
       quantity: "",
     });
     setImageFile(null);
+    setEditErrors({});
+  };
+
+  // Hàm so sánh dữ liệu cũ và mới
+  const isEditDataChanged = (product) => {
+    return (
+      editProductData.product_name !== product.productName ||
+      editProductData.category !== product.category ||
+      editProductData.description !== product.description ||
+      String(editProductData.price) !== String(product.price) ||
+      String(editProductData.quantity) !== String(product.quantity) ||
+      imageFile !== null // Nếu có chọn ảnh mới thì cũng coi là thay đổi
+    );
   };
 
   return (
@@ -165,17 +213,17 @@ export default function ProductManagement() {
           <button
             className="view-products-button"
             onClick={() => {
-  setShowProductList((prev) => {
-    const next = !prev;
-    if (next) setShowForm(false); // Ẩn form khi mở danh sách
-    return next;
-  });
-}}
+              setShowProductList((prev) => {
+                const next = !prev;
+                if (next) setShowForm(false); // Ẩn form khi mở danh sách
+                return next;
+              });
+            }}
           >
             {showProductList ? "Ẩn Danh Sách" : "Danh Sách Sản Phẩm"}
           </button>
         </div>
-
+{/* form danh sách & update */}
         {showProductList && (
           <div className="product-list">
             {products.length === 0 ? (
@@ -195,6 +243,11 @@ export default function ProductManagement() {
                           onChange={handleEditInputChange}
                           required
                         />
+                        {editErrors.product_name && (
+                          <span className="error-message">
+                            {editErrors.product_name}
+                          </span>
+                        )}
                       </div>
                       <div className="form-group">
                         <label htmlFor="edit_category">Danh mục:</label>
@@ -206,6 +259,11 @@ export default function ProductManagement() {
                           onChange={handleEditInputChange}
                           required
                         />
+                        {editErrors.category && (
+                          <span className="error-message">
+                            {editErrors.category}
+                          </span>
+                        )}
                       </div>
                       <div className="form-group">
                         <label htmlFor="edit_description">Mô tả:</label>
@@ -216,6 +274,11 @@ export default function ProductManagement() {
                           onChange={handleEditInputChange}
                           required
                         ></textarea>
+                        {editErrors.description && (
+                          <span className="error-message">
+                            {editErrors.description}
+                          </span>
+                        )}
                       </div>
                       <div className="form-group">
                         <label htmlFor="edit_price">Giá:</label>
@@ -227,6 +290,9 @@ export default function ProductManagement() {
                           onChange={handleEditInputChange}
                           required
                         />
+                        {editErrors.price && (
+                          <span className="error-message">{editErrors.price}</span>
+                        )}
                       </div>
                       <div className="form-group">
                         <label htmlFor="edit_quantity">Số lượng:</label>
@@ -238,6 +304,11 @@ export default function ProductManagement() {
                           onChange={handleEditInputChange}
                           required
                         />
+                        {editErrors.quantity && (
+                          <span className="error-message">
+                            {editErrors.quantity}
+                          </span>
+                        )}
                       </div>
                       <div className="form-group">
                         <label htmlFor="edit_image">Hình ảnh (tùy chọn):</label>
@@ -249,7 +320,17 @@ export default function ProductManagement() {
                         />
                       </div>
                       <div className="edit-buttons">
-                        <button type="submit" className="update-button">
+                        <button
+                          type="submit"
+                          className="update-button"
+                          disabled={!isEditDataChanged(product) || isLoading}
+                          style={{
+                            cursor:
+                              !isEditDataChanged(product) || isLoading
+                                ? "not-allowed"
+                                : "pointer",
+                          }}
+                        >
                           <span className="button-icon">✔</span> Lưu Cập Nhật
                         </button>
                         <button
@@ -299,6 +380,7 @@ export default function ProductManagement() {
           </div>
         )}
 
+{/* form thêm sp */}
         {showForm && (
           <form className="product-form" onSubmit={handleSubmit}>
             <div className="form-group">

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { axiosCatalog } from '../lib/axios';
+import { axiosCatalog, axiosCart } from '../lib/axios';
 import { toast } from 'react-hot-toast';
 
 const useProductStore = create((set) => ({
@@ -45,56 +45,66 @@ const useProductStore = create((set) => ({
       set({ isLoading: false });
     }
   },
-addProduct: async (productData, imageFile) => {
-  set({ isLoading: true });
-  try {
-    if (!imageFile) {
-      toast.error('Vui lòng chọn hình ảnh!');
-      return;
-    }
 
-    const formData = new FormData();
-    formData.append('product_name', productData.product_name);
-    formData.append('category', productData.category);
-    formData.append('description', productData.description);
-    formData.append('price', productData.price);
-    formData.append('quantity', productData.quantity);
-    formData.append('image', imageFile);
-
-    const res = await axiosCatalog.post('/admin/products', formData);
-
-    set((state) => ({
-      products: [...state.products, res.data],
-    }));
-
-    toast.success('Sản phẩm đã được thêm thành công!');
-  } catch (error) {
-    console.error('Error adding product:', {
-      status: error.response?.status,
-      data: error.response?.data,
-      headers: error.response?.headers,
-      message: error.message,
-    });
-    if (error.response?.status === 405) {
-      await useProductStore.getState().fetchAllProducts();
-      toast.success('Sản phẩm đã được thêm thành công, nhưng có lỗi phản hồi từ server (sẽ được sửa)!');
-    } else {
-      toast.error(`Lỗi: ${error.response?.data?.message || error.message}`);
-    }
-  } finally {
-    set({ isLoading: false });
-  }
-},
-  deleteProduct: async (id) => {
+  addProduct: async (productData, imageFile) => {
     set({ isLoading: true });
     try {
-      await axiosCatalog.delete(`/admin/products/${id}`);
+      if (!imageFile) {
+        toast.error('Vui lòng chọn hình ảnh!');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('product_name', productData.product_name);
+      formData.append('category', productData.category);
+      formData.append('description', productData.description);
+      formData.append('price', productData.price);
+      formData.append('quantity', productData.quantity);
+      formData.append('image', imageFile);
+
+      const res = await axiosCatalog.post('/admin/products', formData);
+
+      set((state) => ({
+        products: [...state.products, res.data],
+      }));
+
+      toast.success('Sản phẩm đã được thêm thành công!');
     } catch (error) {
-      console.error(error);
+      console.error('Error adding product:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.response?.headers,
+        message: error.message,
+      });
+      if (error.response?.status === 405) {
+        await useProductStore.getState().fetchAllProducts();
+        toast.success('Sản phẩm đã được thêm thành công, nhưng có lỗi phản hồi từ server (sẽ được sửa)!');
+      } else {
+        toast.error(`Lỗi: ${error.response?.data?.message || error.message}`);
+      }
     } finally {
       set({ isLoading: false });
     }
   },
+
+  deleteProduct: async (id) => {
+    set({ isLoading: true });
+    try {
+      await axiosCatalog.delete(`/admin/products/${id}`);
+      
+    
+      set((state) => ({
+        products: state.products.filter((product) => product.id !== id),
+      }));
+      toast.success('Sản phẩm đã được xóa thành công!');
+    } catch (error) {
+      console.error(error);
+      toast.error('Lỗi khi xóa sản phẩm!');
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
   updateProduct: async (id, productData, imageFile) => {
     set({ isLoading: true });
     try {
@@ -104,23 +114,23 @@ addProduct: async (productData, imageFile) => {
       formData.append('description', productData.description);
       formData.append('price', productData.price);
       formData.append('quantity', productData.quantity);
-  
+
       if (imageFile) {
         formData.append('image', imageFile);
       }
-  
+
       const res = await axiosCatalog.put(`/admin/products/${id}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-  
+
       set((state) => ({
         products: state.products.map((product) =>
           product.id === id ? res.data : product
         ),
       }));
-  
+
       toast.success('Sản phẩm đã được cập nhật thành công!');
     } catch (error) {
       if (error.response) {
@@ -136,7 +146,6 @@ addProduct: async (productData, imageFile) => {
       set({ isLoading: false });
     }
   },
-
 }));
 
-export default useProductStore;
+export default  useProductStore;

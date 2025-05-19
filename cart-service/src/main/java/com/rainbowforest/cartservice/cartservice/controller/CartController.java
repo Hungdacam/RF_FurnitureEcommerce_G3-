@@ -39,7 +39,7 @@ public class CartController {
             if (jwt == null || !jwt.startsWith("Bearer ")) {
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
-            jwt = jwt.substring(7); // Bỏ "Bearer "
+            jwt = jwt.substring(7); 
             System.out.println("Received add to cart request for user: " + userName);
             Cart cart = cartService.addToCart(userName, productId, productName, price, quantity, jwt);
             return new ResponseEntity<>(
@@ -85,6 +85,17 @@ public class CartController {
             return new ResponseEntity<>(
                     "Lỗi khi cập nhật số lượng: " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    @PostMapping("/remove-product")
+    public ResponseEntity<Void> removeProductFromAllCarts(@RequestParam Long productId) {
+        try {
+            cartService.removeProductFromAllCarts(productId);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (Exception e) {
+            System.err.println("Error in removeProductFromAllCarts: " + e.getMessage());
+            e.printStackTrace();
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

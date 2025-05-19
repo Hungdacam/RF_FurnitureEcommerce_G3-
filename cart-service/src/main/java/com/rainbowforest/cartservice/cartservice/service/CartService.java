@@ -8,4 +8,5 @@ public interface CartService {
     Cart updateCartItemQuantity(String userName, Long productId, int newQuantity);
 
     Cart getCartByUserName(String userName);
+    void removeProductFromAllCarts(Long productId);
 }
