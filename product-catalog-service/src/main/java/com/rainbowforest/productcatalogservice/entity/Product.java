@@ -3,7 +3,7 @@ package com.rainbowforest.productcatalogservice.entity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import javax.persistence.*;
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.*;
 import java.math.BigDecimal;
 
 @Entity
@@ -15,23 +15,29 @@ public class Product {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "product_name")
-	@NotNull
+	// @NotNull: chỉ kiểm tra khác null.
+	// @NotBlank: kiểm tra khác null, khác rỗng, không chỉ toàn khoảng trắng.
+
+	@Column(name = "product_name", columnDefinition = "NVARCHAR(255)")
+	@NotBlank(message = "Product name must not be blank")
 	private String productName;
 
 	@Column(name = "price")
-	@NotNull
+	@NotNull(message = "Price must not be null")
+	@DecimalMin(value = "1", inclusive = true, message = "Price must be greater than 0")
 	private BigDecimal price;
 
-	@Column(name = "description")
+	@Column(name = "description", columnDefinition = "NVARCHAR(MAX)")
+	@NotBlank(message = "Description must not be blank")
 	private String description;
 
-	@Column(name = "category")
-	@NotNull
+	@Column(name = "category",  columnDefinition = "NVARCHAR(255)")
+	@NotBlank(message = "Category must not be blank")
 	private String category;
 
 	@Column(name = "quantity")
-	@NotNull
+	@NotNull(message = "Quantity must not be null")
+	@Min(value = 0, message = "Quantity must be greater than or equal to 0")
 	private int quantity;
 
 	@Column(name = "image_url")
