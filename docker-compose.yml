@@ -1,23 +1,25 @@
-version: '3.8'
+version: '3.9'
 
 services:
   sql-server:
     image: mcr.microsoft.com/azure-sql-edge:latest
+    privileged: true
+    container_name: sql-server-1
     environment:
-      ACCEPT_EULA: Y
-      SA_PASSWORD: "Thang191042:"
-      MSSQL_PID: Developer
-      MSSQL_DATA_DIR: /var/opt/mssql/data
-      MSSQL_LOG_DIR: /var/opt/mssql/log
+      - ACCEPT_EULA=1
+      - MSSQL_SA_PASSWORD=Thang191042!   # mật khẩu phải có số, chữ hoa, chữ thường và ký tự đặc biệt
     ports:
-      - "1433:1433"
+      - "1433:1433"                       # map port 1433 host -> container
     volumes:
       - sql-server-data:/var/opt/mssql
-    restart: on-failure
-    cap_add:
-      - SYS_PTRACE
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "Thang191042!", "-Q", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   eureka-server:
     build:
@@ -28,6 +30,9 @@ services:
       - "8761:8761"
     networks:
       - app-network
+    depends_on:
+      sql-server:
+        condition: service_healthy
 
   apigateway:
     build:
@@ -36,12 +41,13 @@ services:
     container_name: apigateway
     ports:
       - "8900:8900"
-    depends_on:
-      - eureka-server
     environment:
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
     networks:
       - app-network
+    depends_on:
+      eureka-server:
+        condition: service_started
 
   user-service:
     build:
@@ -50,16 +56,18 @@ services:
     container_name: user-service
     ports:
       - "8811:8811"
-    depends_on:
-      - sql-server
-      - eureka-server
     environment:
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
-      SPRING_DATASOURCE_URL: jdbc:sqlserver://sql-server:1433;databaseName=users;encrypt=true;trustServerCertificate=true;characterEncoding=UTF-8
-      SPRING_DATASOURCE_USERNAME: sa
-      SPRING_DATASOURCE_PASSWORD: "Thang191042:"
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:sqlserver://sql-server:1433;databaseName=users;encrypt=true;trustServerCertificate=true;characterEncoding=UTF-8
+      - SPRING_DATASOURCE_USERNAME=sa
+      - SPRING_DATASOURCE_PASSWORD=Thang191042!
     networks:
       - app-network
+    depends_on:
+      sql-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
 
   product-catalog-service:
     build:
@@ -68,16 +76,18 @@ services:
     container_name: product-catalog-service
     ports:
       - "8810:8810"
-    depends_on:
-      - sql-server
-      - eureka-server
     environment:
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
-      SPRING_DATASOURCE_URL: jdbc:sqlserver://sql-server:1433;databaseName=product_catalog;encrypt=true;trustServerCertificate=true;characterEncoding=UTF-8
-      SPRING_DATASOURCE_USERNAME: sa
-      SPRING_DATASOURCE_PASSWORD: "Thang191042:"
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:sqlserver://sql-server:1433;databaseName=product_catalog;encrypt=true;trustServerCertificate=true;characterEncoding=UTF-8
+      - SPRING_DATASOURCE_USERNAME=sa
+      - SPRING_DATASOURCE_PASSWORD=Thang191042!
     networks:
       - app-network
+    depends_on:
+      sql-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
 
   cart-service:
     build:
@@ -86,17 +96,43 @@ services:
     container_name: cart-service
     ports:
       - "8902:8902"
-    depends_on:
-      - sql-server
-      - eureka-server
-      - product-catalog-service
     environment:
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
-      SPRING_DATASOURCE_URL: jdbc:sqlserver://sql-server:1433;databaseName=cart;encrypt=true;trustServerCertificate=true;characterEncoding=UTF-8
-      SPRING_DATASOURCE_USERNAME: sa
-      SPRING_DATASOURCE_PASSWORD: "Thang191042:"
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:sqlserver://sql-server:1433;databaseName=cart;encrypt=true;trustServerCertificate=true;characterEncoding=UTF-8
+      - SPRING_DATASOURCE_USERNAME=sa
+      - SPRING_DATASOURCE_PASSWORD=Thang191042!
     networks:
       - app-network
+    depends_on:
+      sql-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      product-catalog-service:
+        condition: service_started
+
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    container_name: order-service
+    ports:
+      - "8812:8812"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:sqlserver://sql-server:1433;databaseName=orders;encrypt=true;trustServerCertificate=true;characterEncoding=UTF-8
+      - SPRING_DATASOURCE_USERNAME=sa
+      - SPRING_DATASOURCE_PASSWORD=Thang191042!
+      - JWT_SECRET=rainbowforest-secure-key-should-be-very-long-and-complex-for-production-use
+    networks:
+      - app-network
+    depends_on:
+      sql-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      product-catalog-service:
+        condition: service_started
 
   frontend:
     build:
@@ -105,8 +141,17 @@ services:
     container_name: frontend
     ports:
       - "3000:80"
+    networks:
+      - app-network
     depends_on:
-      - apigateway
+      apigateway:
+        condition: service_started
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
     networks:
       - app-network
 
