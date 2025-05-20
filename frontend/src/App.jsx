@@ -8,7 +8,9 @@ import ProductManagement from './pages/ProductManagement';
 import DetailProduct from './pages/DetailProduct';
 import ProfileUser from './pages/ProfileUser';
 import Cart from './pages/Cart';
-
+import Checkout from './pages/Checkout';
+import OrderManagement from './pages/OrderManagement';
+import Orders from './pages/Orders';
 const App = () => {
   return (
     <Router>
@@ -22,6 +24,9 @@ const App = () => {
         <Route path="/product-detail/:productId" element={<DetailProduct />} />
        <Route path="/profileUser" element={<ProfileUser />} />
       <Route path="/cart" element={<Cart />} />
+      <Route path="/checkout" element={<Checkout />} />
+      <Route path="/orderManagement" element={<OrderManagement />} />
+      <Route path="/orders" element={<Orders />} />
       </Routes>
     </Router>
   );

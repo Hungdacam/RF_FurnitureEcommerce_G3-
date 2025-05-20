@@ -47,6 +47,14 @@ public class RouteConfig {
                                         .setName("userServiceCircuitBreaker")
                                         .setFallbackUri("forward:/fallback/user")))
                         .uri("lb://user-service"))
+                .route("user-service-registration", r -> r
+                                                .path("/api/registration")
+                                                .filters(f -> f
+                                                        .rewritePath("/api/registration", "/api/registration")
+                                                        .circuitBreaker(config -> config
+                                                                .setName("userServiceCircuitBreaker")
+                                                                .setFallbackUri("forward:/fallback/user")))
+                                                .uri("lb://user-service"))
                 .route("product-catalog-service", r -> r
                         .path("/api/catalog/**")
                         .filters(f -> f
@@ -69,9 +77,9 @@ public class RouteConfig {
                                 .preserveHostHeader())
                         .uri("lb://product-catalog-service"))
                 .route("order-service", r -> r
-                        .path("/api/shop/**")
+                        .path("/api/orders/**")
                         .filters(f -> f
-                                .rewritePath("/api/shop/(?<segment>.*)", "/${segment}")
+                                .rewritePath("/api/orders/(?<segment>.*)", "/api/orders/${segment}")
                                 .preserveHostHeader())
                         .uri("lb://order-service"))
                 .route("product-recommendation-service", r -> r

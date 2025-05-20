@@ -29,31 +29,33 @@ const useAuthStore = create((set) => ({
   },
 
   signup: async (data, navigate) => {
-    set({ isSigningUp: true });
-    try {
-      const res = await axiosInstance.post('/api/registration', {
-        userName: data.userName,
-        userPassword: data.userPassword,
-        userDetails: data.userDetails || null,
-      });
-      if (res.data.token) {
-        localStorage.setItem('authToken', res.data.token);
-        set({ authUser: { userName: res.data.userName, userId: res.data.userId } });
-        await useCartStore.getState().syncLocalCart(res.data.userName);
-        toast.success('Đăng ký thành công!');
-        navigate('/dashboard');
-      } else {
-        throw new Error('Không nhận được token từ server');
-      }
-    } catch (error) {
-      console.error('Lỗi đăng ký:', error);
-      const errorMessage = error.response?.data?.message || 'Đăng ký thất bại';
-      toast.error(errorMessage);
-    } finally {
-      set({ isSigningUp: false });
+  set({ isSigningUp: true });
+  try {
+    const res = await axiosInstance.post('/api/registration', {
+      userName: data.userName,
+      userPassword: data.userPassword,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      phoneNumber: data.phoneNumber
+    });
+    
+    if (res.data.token) {
+      localStorage.setItem('authToken', res.data.token);
+      set({ authUser: { userName: res.data.userName, userId: res.data.userId } });
+      toast.success('Đăng ký thành công!');
+      navigate('/dashboard');
+    } else {
+      throw new Error('Không nhận được token từ server');
     }
-  },
-
+  } catch (error) {
+    console.error('Lỗi đăng ký:', error);
+    const errorMessage = error.response?.data?.message || 'Đăng ký thất bại';
+    toast.error(errorMessage);
+  } finally {
+    set({ isSigningUp: false });
+  }
+},
   login: async (data, navigate) => {
     set({ isLoggingIn: true });
     try {

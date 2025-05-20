@@ -19,6 +19,12 @@ export const axiosCart = axios.create({
   },
 });
 
+export const axiosOrder = axios.create({
+  baseURL: 'http://localhost:8900/api/orders', // Order Service via Gateway
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 // Thêm interceptor để tự động thêm token vào header
 axiosInstance.interceptors.request.use(
   (config) => {
@@ -56,3 +62,13 @@ axiosCart.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+axiosOrder.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);

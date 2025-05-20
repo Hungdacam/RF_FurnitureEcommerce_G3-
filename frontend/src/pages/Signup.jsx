@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import useAuthStore from '../stores/useAuthStore';
-import background from '../assets/background.png';
-import { Link } from 'react-router-dom';
-import "../css/Signup.css";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -13,16 +10,11 @@ const Signup = () => {
     lastName: '',
     email: '',
     phoneNumber: '',
-    street: '',
-    streetNumber: '',
-    zipCode: '',
-    locality: '',
-    country: '',
   });
-
+  
   const navigate = useNavigate();
   const { signup, isSigningUp } = useAuthStore();
-
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -30,64 +22,103 @@ const Signup = () => {
       [name]: value,
     }));
   };
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const userDetails = {
+    
+    await signup({
+      userName: formData.userName,
+      userPassword: formData.userPassword,
       firstName: formData.firstName,
       lastName: formData.lastName,
       email: formData.email,
-      phoneNumber: formData.phoneNumber,
-      street: formData.street,
-      streetNumber: formData.streetNumber,
-      zipCode: formData.zipCode,
-      locality: formData.locality,
-      country: formData.country,
-    };
-    const success = await signup({ userName: formData.userName, userPassword: formData.userPassword, userDetails });
-    if (success) {
-      navigate('/login');
-    }
-
+      phoneNumber: formData.phoneNumber
+    }, navigate);
   };
-
+  
   return (
-    <div
-      className="signup-container"
-      style={{ backgroundImage: `url(${background})` }}
-    >
-      <div className="signup-form-wrapper">
-        <h2>Đăng ký</h2>
-        <form onSubmit={handleSubmit}>
-          {['userName', 'userPassword', 'firstName', 'lastName', 'email', 'phoneNumber'].map((field, index) => (
-            <div className="signup-input-group" key={index}>
-              <input
-                type={field === 'userPassword' ? 'password' : field === 'email' ? 'email' : 'text'}
-                name={field}
-                placeholder={
-                  field === 'userName' ? 'Tên người dùng' :
-                  field === 'userPassword' ? 'Nhập mật khẩu' :
-                  field === 'firstName' ? 'Nhập họ' :
-                  field === 'lastName' ? 'Nhập tên' :
-                  field === 'email' ? 'Nhập email' :
-                  'Nhập số điện thoại'
-                }
-                value={formData[field]}
-                onChange={handleChange}
-                required
-              />
-            </div>
-          ))}
-          <div className="signup-button-wrapper">
-            <button type="submit" className="signup-button" disabled={isSigningUp}>
-              {isSigningUp ? 'Đang đăng ký...' : 'Đăng ký'}
-            </button>
-          </div>
-          <p className="signup-text">
-            Đăng nhập bằng tài khoản? <Link to="/login" className="signup-link">Đăng nhập</Link>
-          </p>
-        </form>
-      </div>
+    <div className="signup-container">
+      <h2>Đăng ký tài khoản</h2>
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="userName">Tên đăng nhập</label>
+          <input
+            type="text"
+            id="userName"
+            name="userName"
+            value={formData.userName}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="userPassword">Mật khẩu</label>
+          <input
+            type="password"
+            id="userPassword"
+            name="userPassword"
+            value={formData.userPassword}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="firstName">Họ</label>
+          <input
+            type="text"
+            id="firstName"
+            name="firstName"
+            value={formData.firstName}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="lastName">Tên</label>
+          <input
+            type="text"
+            id="lastName"
+            name="lastName"
+            value={formData.lastName}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="phoneNumber">Số điện thoại</label>
+          <input
+            type="tel"
+            id="phoneNumber"
+            name="phoneNumber"
+            value={formData.phoneNumber}
+            onChange={handleChange}
+          />
+        </div>
+        
+        <button type="submit" disabled={isSigningUp}>
+          {isSigningUp ? 'Đang đăng ký...' : 'Đăng ký'}
+        </button>
+      </form>
+      
+      <p>
+        Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
+      </p>
     </div>
   );
 };

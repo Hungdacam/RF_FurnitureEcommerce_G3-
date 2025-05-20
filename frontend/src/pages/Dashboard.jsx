@@ -73,9 +73,9 @@ const Dashboard = () => {
     setShowMenu((prev) => !prev);
   };
 
-const handleLogout = async () => {
-    logout(); // Gọi hàm logout từ store hoặc context của bạn
-    navigate('/login'); // Điều hướng tới trang đăng nhập
+  const handleLogout = async () => {
+    logout();
+    navigate('/login');
   };
 
   const handleGoToProductManagement = () => {
@@ -90,6 +90,14 @@ const handleLogout = async () => {
     navigate('/profileUser');
   };
 
+  const handleViewOrders = () => {
+    navigate('/orders');
+  };
+
+  const handleOrderManagement = () => {
+    navigate('/orderManagement');
+  };
+
   const handleAddToCart = async (product) => {
     if (!authUser) {
       try {
@@ -101,7 +109,6 @@ const handleLogout = async () => {
         console.error(error);
       }
       return;
-    
     }
     try {
       console.log('User:', authUser);
@@ -254,21 +261,56 @@ const handleLogout = async () => {
                   >
                     Xem thông tin cá nhân
                   </button>
-                  {authUser?.roles?.includes('ROLE_ADMIN') && (
+                  {!authUser?.roles?.includes('ROLE_ADMIN') && (
                     <button
                       style={{
                         padding: '10px 20px',
-                        backgroundColor: '#007bff',
+                        backgroundColor: '#17a2b8',
                         color: '#fff',
                         border: 'none',
                         borderRadius: '5px',
                         cursor: 'pointer',
+                        marginBottom: '10px',
                         width: '100%',
                       }}
-                      onClick={handleGoToProductManagement}
+                      onClick={handleViewOrders}
                     >
-                      Vào trang quản lý sản phẩm
+                      Theo dõi đơn hàng
                     </button>
+                  )}
+                  {authUser?.roles?.includes('ROLE_ADMIN') && (
+                    <>
+                      <button
+                        style={{
+                          padding: '10px 20px',
+                          backgroundColor: '#007bff',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '5px',
+                          cursor: 'pointer',
+                          marginBottom: '10px',
+                          width: '100%',
+                        }}
+                        onClick={handleGoToProductManagement}
+                      >
+                        Vào trang quản lý sản phẩm
+                      </button>
+                      <button
+                        style={{
+                          padding: '10px 20px',
+                          backgroundColor: '#ffc107',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '5px',
+                          cursor: 'pointer',
+                          marginBottom: '10px',
+                          width: '100%',
+                        }}
+                        onClick={handleOrderManagement}
+                      >
+                        Quản lý đơn hàng
+                      </button>
+                    </>
                   )}
                 </div>
                 <button className="logout-button" onClick={handleLogout}>Đăng xuất</button>
