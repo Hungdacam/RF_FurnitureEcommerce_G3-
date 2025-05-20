@@ -1,16 +1,18 @@
-// src/components/Header.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/useAuthStore';
+import useProductStore from '../stores/useProductStore';
 import '../css/Header.css';
 
 const Header = () => {
   const { authUser, logout } = useAuthStore();
+  const { products, searchProducts, filterByCategory, resetSearch } = useProductStore();
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const dropdownRef = useRef(null);
   const categoryMenuRef = useRef(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -27,6 +29,12 @@ const Header = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  const handleSearch = (keyword) => {
+    setSearchQuery(keyword);
+    searchProducts(keyword);
+    navigate('/dashboard');
+  };
 
   const handleProfileClick = (e) => {
     e.stopPropagation();
@@ -56,6 +64,22 @@ const Header = () => {
     navigate('/cart');
   };
 
+  const handleViewProfile = () => {
+    navigate('/profileUser');
+  };
+
+  const handleViewOrders = () => {
+    navigate('/orders');
+  };
+
+  const handleOrderManagement = () => {
+    if (authUser?.roles?.includes('ROLE_ADMIN')) {
+      navigate('/orderManagement');
+    } else {
+      alert('Bạn không có quyền truy cập vào trang này!');
+    }
+  };
+
   return (
     <header className="header">
       <div className="header-container">
@@ -77,10 +101,56 @@ const Header = () => {
               </button>
               {showCategoryMenu && (
                 <div className="dropdown-content">
-                  <Link to="/category/electronics" className="dropdown-item">Điện tử</Link>
-                  <Link to="/category/clothing" className="dropdown-item">Quần áo</Link>
-                  <Link to="/category/books" className="dropdown-item">Sách</Link>
-                  <Link to="/category/home" className="dropdown-item">Đồ gia dụng</Link>
+                  <button
+                    className="dropdown-item"
+                    onClick={() => {
+                      filterByCategory('Đồ decor');
+                      navigate('/dashboard');
+                      setShowCategoryMenu(false);
+                    }}
+                  >
+                    Đồ decor
+                  </button>
+                  <button
+                    className="dropdown-item"
+                    onClick={() => {
+                      filterByCategory('Ghế');
+                      navigate('/dashboard');
+                      setShowCategoryMenu(false);
+                    }}
+                  >
+                    Ghế
+                  </button>
+                  <button
+                    className="dropdown-item"
+                    onClick={() => {
+                      filterByCategory('Bàn');
+                      navigate('/dashboard');
+                      setShowCategoryMenu(false);
+                    }}
+                  >
+                    Bàn
+                  </button>
+                  <button
+                    className="dropdown-item"
+                    onClick={() => {
+                      filterByCategory('Giường');
+                      navigate('/dashboard');
+                      setShowCategoryMenu(false);
+                    }}
+                  >
+                    Giường
+                  </button>
+                  <button
+                    className="dropdown-item"
+                    onClick={() => {
+                      filterByCategory('Khác');
+                      navigate('/dashboard');
+                      setShowCategoryMenu(false);
+                    }}
+                  >
+                    Khác
+                  </button>
                 </div>
               )}
             </li>
@@ -89,7 +159,19 @@ const Header = () => {
             </li>
           </ul>
         </nav>
-        
+        <div className="search-bar">
+          <input
+            type="text"
+            placeholder="Tìm kiếm sản phẩm..."
+            className="search-input"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchQuery)}
+          />
+          <button className="search-button" onClick={() => handleSearch(searchQuery)}>
+            🔍
+          </button>
+        </div>
         <div className="header-actions">
           {authUser ? (
             <>
@@ -114,22 +196,35 @@ const Header = () => {
                       <p className="user-email">{authUser.email || ''}</p>
                     </div>
                     <div className="dropdown-actions">
-                      <Link to="/profile" className="dropdown-link">
+                      <button className="dropdown-link" onClick={handleViewProfile}>
                         <svg className="dropdown-icon" viewBox="0 0 24 24">
                           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
                         </svg>
                         Hồ sơ
-                      </Link>
-                      
-                      {authUser.roles && authUser.roles.includes('ROLE_ADMIN') && (
-                        <button className="dropdown-link" onClick={handleGoToProductManagement}>
+                      </button>
+                      {authUser?.roles?.includes('ROLE_ADMIN') ? (
+                        <>
+                          <button className="dropdown-link" onClick={handleGoToProductManagement}>
+                            <svg className="dropdown-icon" viewBox="0 0 24 24">
+                              <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"></path>
+                            </svg>
+                            Quản lý sản phẩm
+                          </button>
+                          <button className="dropdown-link" onClick={handleOrderManagement}>
+                            <svg className="dropdown-icon" viewBox="0 0 24 24">
+                              <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 16H5V5h2v2h10V5h2v14z"></path>
+                            </svg>
+                            Quản lý đơn hàng
+                          </button>
+                        </>
+                      ) : (
+                        <button className="dropdown-link" onClick={handleViewOrders}>
                           <svg className="dropdown-icon" viewBox="0 0 24 24">
-                            <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"></path>
+                            <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 16H5V5h2v2h10V5h2v14z"></path>
                           </svg>
-                          Quản lý sản phẩm
+                          Theo dõi đơn hàng
                         </button>
                       )}
-                      
                       <button className="dropdown-link logout" onClick={handleLogout}>
                         <svg className="dropdown-icon" viewBox="0 0 24 24">
                           <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"></path>

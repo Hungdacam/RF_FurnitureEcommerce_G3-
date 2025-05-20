@@ -224,7 +224,7 @@ export default function Cart() {
             </div>
             <button
                 className="checkout-button"
-                onClick={() => navigate('/checkout')}
+                onClick={() => navigate('/checkout', { state: { selectedItems } })}
                 disabled={hasUnavailableItems || !hasSelectedItems}
             >
                 Thanh Toán

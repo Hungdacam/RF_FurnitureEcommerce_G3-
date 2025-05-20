@@ -1,0 +1,113 @@
+.checkout-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.checkout-title {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 20px;
+}
+
+.checkout-content {
+    display: flex;
+    gap: 20px;
+}
+
+.user-details, .order-details {
+    flex: 1;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.user-details h2, .order-details h2 {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input, .order-note textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.order-items {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.order-item {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.order-item-image {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 5px;
+}
+
+.order-item-details h3 {
+    font-size: 1.2rem;
+    margin-bottom: 5px;
+}
+
+.order-note {
+    margin-bottom: 20px;
+}
+
+.order-note textarea {
+    height: 100px;
+    resize: vertical;
+}
+
+.payment-method {
+    margin-bottom: 20px;
+}
+
+.order-total {
+    text-align: right;
+    margin-bottom: 20px;
+}
+
+.save-button, .place-order-button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.save-button:hover, .place-order-button:hover {
+    background-color: #0056b3;
+}
+
+.place-order-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .checkout-content {
+        flex-direction: column;
+    }
+}

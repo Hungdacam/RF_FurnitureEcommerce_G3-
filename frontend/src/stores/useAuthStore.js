@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import {axiosInstance} from '../lib/axios';
 import { toast } from 'react-hot-toast';
-
+import useCartStore from './useCartStore';
 const useAuthStore = create((set) => ({
   authUser: null,
   isSigningUp: false,
@@ -56,46 +56,61 @@ const useAuthStore = create((set) => ({
     set({ isSigningUp: false });
   }
 },
-  
-
   login: async (data, navigate) => {
-    set({ isLoggingIn: true });
-    try {
-      const res = await axiosInstance.post('/api/login', {
-        userName: data.userName,
-        userPassword: data.userPassword,
-      });
-      if (res.data.token) {
-        localStorage.setItem('authToken', res.data.token);
+  set({ isLoggingIn: true });
+  try {
+    // Gọi API login
+    const res = await axiosInstance.post('/api/login', {
+      userName: data.userName,
+      userPassword: data.userPassword,
+    });
+    
+    // Lưu token
+    if (res.data.token) {
+      localStorage.setItem('authToken', res.data.token);
+      
+      try {
+        // Gọi API lấy thông tin người dùng
         const userRes = await axiosInstance.get(`/api/users/by-username?username=${res.data.userName}`);
+        
+        // Cập nhật state
         set({
           authUser: {
             ...userRes.data,
-            roles: [userRes.data.role?.roleName], // Đảm bảo luôn có mảng roles
+            roles: [userRes.data.roleName],
           },
-          role: res.data.roles, // nếu muốn giữ
+          role: res.data.roles,
         });
+        
+        // Đồng bộ giỏ hàng và chuyển hướng
+        await useCartStore.getState().syncLocalCart(res.data.userName);
         toast.success('Đăng nhập thành công!');
         navigate('/dashboard');
-      } else {
-        throw new Error('Không nhận được token từ server');
+      } catch (userError) {
+        // Xử lý lỗi khi lấy thông tin người dùng
+        console.error('Lỗi khi lấy thông tin người dùng:', userError);
+        toast.error('Đăng nhập thành công nhưng không lấy được thông tin người dùng');
+        // Vẫn chuyển hướng nhưng có thể cần reload để cập nhật đầy đủ
+        navigate('/dashboard');
       }
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Đăng nhập thất bại';
-      toast.error(errorMessage);
-    } finally {
-      set({ isLoggingIn: false });
+    } else {
+      throw new Error('Không nhận được token từ server');
     }
-  },
-
-  logout: async (navigate) => {
+  } catch (error) {
+    // Xử lý lỗi khi đăng nhập
+    console.error('Lỗi đăng nhập:', error);
+    const errorMessage = error.response?.data?.message || 'Đăng nhập thất bại';
+    toast.error(errorMessage);
+  } finally {
+    set({ isLoggingIn: false });
+  }
+},
+  logout: async () => {
     set({ isLoggingOut: true });
     try {
-      await axiosInstance.post('/api/logout'); // Gửi yêu cầu POST
       localStorage.removeItem('authToken');
       set({ authUser: null });
       toast.success('Đăng xuất thành công');
-      if (navigate) navigate('/');
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Lỗi khi đăng xuất';
       toast.error(errorMessage);
