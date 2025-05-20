@@ -42,6 +42,8 @@ public class JwtFilter extends OncePerRequestFilter {
             @NonNull FilterChain chain) throws ServletException, IOException {
 
         final String requestURI = request.getRequestURI();
+        logger.debug("Processing request: {} with context path: {}",
+                requestURI, request.getContextPath());
         final String queryString = request.getQueryString();
         logger.debug("Processing request: {} with query: {}", requestURI, queryString);
 
