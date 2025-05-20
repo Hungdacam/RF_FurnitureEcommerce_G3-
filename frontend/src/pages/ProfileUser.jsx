@@ -17,7 +17,7 @@ const ProfileUser = () => {
       <p><strong>Email:</strong> {authUser.userDetails?.email}</p>
       <p><strong>Số điện thoại:</strong> {authUser.userDetails?.phoneNumber}</p>
       <p><strong>Địa chỉ:</strong> {authUser.userDetails?.street}</p>
-       <button>Lịch sử mua hàng</button>
+      
     </div>
     </div>
   )

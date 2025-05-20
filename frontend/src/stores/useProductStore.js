@@ -5,13 +5,16 @@ import { toast } from 'react-hot-toast';
 const useProductStore = create((set) => ({
   products: [],
   product: null,
+  searchResults: [],
+  isSearching: false,
+  selectedCategory: null,
   isLoading: false,
 
   fetchAllProducts: async () => {
     set({ isLoading: true });
     try {
       const res = await axiosCatalog.get('/products');
-      set({ products: res.data });
+      set({ products: res.data, searchResults: [], isSearching: false, selectedCategory: null });
     } catch (error) {
       toast.error('Failed to fetch products');
       console.error(error);
@@ -37,13 +40,52 @@ const useProductStore = create((set) => ({
     set({ isLoading: true });
     try {
       const res = await axiosCatalog.get(`/products?category=${category}`);
-      set({ products: res.data });
+      set({ 
+        searchResults: res.data, 
+        isSearching: true, 
+        selectedCategory: category 
+      });
     } catch (error) {
       toast.error('Failed to fetch products by category');
       console.error(error);
+      set({ searchResults: [], isSearching: true, selectedCategory: category });
     } finally {
       set({ isLoading: false });
     }
+  },
+
+  searchProducts: (keyword) => {
+    set((state) => {
+      if (!keyword.trim()) {
+        return { searchResults: [], isSearching: false, selectedCategory: null };
+      }
+      const result = state.products.filter((p) =>
+        p.productName.toLowerCase().includes(keyword.toLowerCase())
+      );
+      return { searchResults: result, isSearching: true, selectedCategory: null };
+    });
+  },
+
+  filterByCategory: (category) => {
+    set((state) => {
+      const normalizedCategory = category.trim().toLowerCase();
+      const result = state.products.filter((product) => {
+        const cat = (product.category || '').trim().toLowerCase();
+        if (normalizedCategory === 'khác') {
+          return !['ghế', 'bàn', 'đồ decor', 'giường'].includes(cat);
+        }
+        return cat === normalizedCategory;
+      });
+      return {
+        searchResults: result,
+        isSearching: true,
+        selectedCategory: category,
+      };
+    });
+  },
+
+  resetSearch: () => {
+    set({ searchResults: [], isSearching: false, selectedCategory: null });
   },
 
   addProduct: async (productData, imageFile) => {
@@ -91,10 +133,9 @@ const useProductStore = create((set) => ({
     set({ isLoading: true });
     try {
       await axiosCatalog.delete(`/admin/products/${id}`);
-      
-    
       set((state) => ({
         products: state.products.filter((product) => product.id !== id),
+        searchResults: state.searchResults.filter((product) => product.id !== id),
       }));
       toast.success('Sản phẩm đã được xóa thành công!');
     } catch (error) {
@@ -129,6 +170,9 @@ const useProductStore = create((set) => ({
         products: state.products.map((product) =>
           product.id === id ? res.data : product
         ),
+        searchResults: state.searchResults.map((product) =>
+          product.id === id ? res.data : product
+        ),
       }));
 
       toast.success('Sản phẩm đã được cập nhật thành công!');
@@ -148,4 +192,4 @@ const useProductStore = create((set) => ({
   },
 }));
 
-export default  useProductStore;
+export default useProductStore;

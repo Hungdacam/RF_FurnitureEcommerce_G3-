@@ -1,102 +1,35 @@
-import React, { useEffect, useState, useRef } from 'react';
-import useProductStore from '../stores/useProductStore';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import useProductStore from '../stores/useProductStore';
 import useAuthStore from '../stores/useAuthStore';
 import useCartStore from '../stores/useCartStore';
 import background from '../assets/background.png';
 import seatingImg from '../assets/seating.png';
-import lampImg from '../assets/lamp.png';
 import storageImg from '../assets/storage.png';
 import tableImg from '../assets/table.png';
+import lampImg from '../assets/lamp.png';
 import vavesImg from '../assets/vaves.png';
 import '../css/Dasboard.css';
 
 const Dashboard = () => {
-  const { products, fetchAllProducts, isLoading: isProductLoading } = useProductStore();
+  const { 
+    products, 
+    searchResults, 
+    isSearching, 
+    selectedCategory, 
+    fetchAllProducts, 
+    filterByCategory, 
+    resetSearch, 
+    isLoading: isProductLoading 
+  } = useProductStore();
   const { addToCart, isLoading: isCartLoading } = useCartStore();
+  const { authUser } = useAuthStore();
   const navigate = useNavigate();
-  const { authUser, logout } = useAuthStore();
-  const [showMenu, setShowMenu] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef();
   const [hoveredIndex, setHoveredIndex] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResult, setSearchResult] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-
-  const handleSearch = (keyword) => {
-    setSelectedCategory(null);
-    if (!keyword.trim()) return;
-    if (!products || products.length === 0) {
-      console.warn("Products chưa được tải.");
-      return;
-    }
-    setIsSearching(true);
-    const result = products.filter(p =>
-      p.productName.toLowerCase().includes(keyword.toLowerCase())
-    );
-    setSearchResult(result);
-    setIsSearching(true);
-  };
-
-  const filterByCategory = (category) => {
-    setSelectedCategory(category);
-    setIsSearching(true);
-    const normalizedCategory = category.trim().toLowerCase();
-    const result = products.filter((product) => {
-      const cat = (product.category || '').trim().toLowerCase();
-      if (normalizedCategory === 'khác') {
-        return !['ghế', 'bàn', 'đồ decor', 'giường'].includes(cat);
-      }
-      return cat === normalizedCategory;
-    });
-    setSearchResult(result);
-  };
 
   useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setIsSearching(false);
-      setSearchResult([]);
-      setSelectedCategory(null);
-    }
-  }, [searchQuery]);
-
-  useEffect(() => {
-    const handleClickOutside = () => setShowMenu(false);
-    if (showMenu) document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [showMenu]);
-
-  const handleProfileClick = (e) => {
-    e.stopPropagation();
-    setShowMenu((prev) => !prev);
-  };
-
-  const handleLogout = async () => {
-    logout();
-    navigate('/login');
-  };
-
-  const handleGoToProductManagement = () => {
-    if (authUser?.roles?.includes('ROLE_ADMIN')) {
-      navigate('/product-management');
-    } else {
-      alert('Bạn không có quyền truy cập vào trang này!');
-    }
-  };
-
-  const handleViewProfile = () => {
-    navigate('/profileUser');
-  };
-
-  const handleViewOrders = () => {
-    navigate('/orders');
-  };
-
-  const handleOrderManagement = () => {
-    navigate('/orderManagement');
-  };
+    fetchAllProducts();
+  }, [fetchAllProducts]);
 
   const handleAddToCart = async (product) => {
     if (!authUser) {
@@ -111,8 +44,6 @@ const Dashboard = () => {
       return;
     }
     try {
-      console.log('User:', authUser);
-      console.log('Token:', localStorage.getItem('authToken'));
       await addToCart(authUser.userName, product.id, product.productName, product.price, 1, true);
       alert('Đã thêm sản phẩm vào giỏ hàng!');
     } catch (error) {
@@ -120,20 +51,6 @@ const Dashboard = () => {
       console.error(error);
     }
   };
-
-  useEffect(() => {
-    fetchAllProducts();
-  }, [fetchAllProducts]);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   if (isProductLoading || isCartLoading) {
     return (
@@ -201,124 +118,6 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-      <header className="main-header">
-        <div className="header-container">
-          <div className="logo">
-            <span className="logo-text">APHRODITE</span>
-          </div>
-          <nav className="main-nav">
-            <ul className="nav-list">
-              <li className="nav-item active"><a href="#" className="nav-link">Trang chủ</a></li>
-              <li className="nav-item"><a href="#" className="nav-link">Danh mục sản phẩm</a></li>
-              <li className="nav-item">
-                <a
-                  href="#"
-                  className="nav-link"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigate('/cart');
-                  }}
-                >
-                  Giỏ hàng
-                </a>
-              </li>
-              <li className="nav-item"><a href="#" className="nav-link">About Us</a></li>
-            </ul>
-          </nav>
-          <div className="search-bar">
-            <input
-              type="text"
-              placeholder="Tìm kiếm sản phẩm..."
-              className="search-input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchQuery)}
-            />
-            <button className="search-button" onClick={() => handleSearch(searchQuery)}>
-              🔍
-            </button>
-          </div>
-          <div className="user-profile" ref={menuRef}>
-            <button className="profile-button" onClick={() => setMenuOpen(!menuOpen)}>
-              <span className="profile-icon">👤</span>
-            </button>
-            {menuOpen && (
-              <div className="profile-menu">
-                <p className="username">👋 Xin chào, <strong>{authUser?.userName}</strong></p>
-                <div style={{ padding: '15px 0' }}>
-                  <button
-                    style={{
-                      padding: '10px 20px',
-                      backgroundColor: '#28a745',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '5px',
-                      cursor: 'pointer',
-                      marginBottom: '10px',
-                      width: '100%',
-                    }}
-                    onClick={handleViewProfile}
-                  >
-                    Xem thông tin cá nhân
-                  </button>
-                  {!authUser?.roles?.includes('ROLE_ADMIN') && (
-                    <button
-                      style={{
-                        padding: '10px 20px',
-                        backgroundColor: '#17a2b8',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '5px',
-                        cursor: 'pointer',
-                        marginBottom: '10px',
-                        width: '100%',
-                      }}
-                      onClick={handleViewOrders}
-                    >
-                      Theo dõi đơn hàng
-                    </button>
-                  )}
-                  {authUser?.roles?.includes('ROLE_ADMIN') && (
-                    <>
-                      <button
-                        style={{
-                          padding: '10px 20px',
-                          backgroundColor: '#007bff',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: '5px',
-                          cursor: 'pointer',
-                          marginBottom: '10px',
-                          width: '100%',
-                        }}
-                        onClick={handleGoToProductManagement}
-                      >
-                        Vào trang quản lý sản phẩm
-                      </button>
-                      <button
-                        style={{
-                          padding: '10px 20px',
-                          backgroundColor: '#ffc107',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: '5px',
-                          cursor: 'pointer',
-                          marginBottom: '10px',
-                          width: '100%',
-                        }}
-                        onClick={handleOrderManagement}
-                      >
-                        Quản lý đơn hàng
-                      </button>
-                    </>
-                  )}
-                </div>
-                <button className="logout-button" onClick={handleLogout}>Đăng xuất</button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
       <div className="container">
         <div style={{ maxWidth: '250px', marginLeft: '-50px', marginTop: '40px', padding: '0 20px', display: 'flex', }}>
           <div style={{
@@ -351,11 +150,11 @@ const Dashboard = () => {
             }}
           >
             {[
-              { img: seatingImg, text: 'ĐỒ DECOR' },
-              { img: storageImg, text: 'GHẾ' },
-              { img: tableImg, text: 'BÀN' },
-              { img: lampImg, text: 'GIƯỜNG' },
-              { img: vavesImg, text: 'KHÁC' },
+              { img: seatingImg, text: 'Đồ decor' },
+              { img: storageImg, text: 'Ghế' },
+              { img: tableImg, text: 'Bàn' },
+              { img: lampImg, text: 'Giường' },
+              { img: vavesImg, text: 'Khác' },
             ].map((item, index) => (
               <div
                 key={index}
@@ -395,12 +194,7 @@ const Dashboard = () => {
         {(isSearching || selectedCategory) && (
           <div style={{ textAlign: 'center', marginTop: '30px', marginBottom: '-20px' }}>
             <button
-              onClick={() => {
-                setSearchQuery('');
-                setSearchResult([]);
-                setIsSearching(false);
-                setSelectedCategory(null);
-              }}
+              onClick={() => resetSearch()}
               style={{
                 padding: '8px 16px',
                 backgroundColor: 'rgb(45,88,83)',
@@ -416,11 +210,9 @@ const Dashboard = () => {
         )}
         <div style={{ paddingTop: '40px' }}>
           <h1 style={{ textAlign: 'center', textTransform: 'uppercase', color: 'rgb(45,88,83)' }}>
-            {searchQuery
-              ? `Kết quả tìm kiếm cho: '${searchQuery}'`
-              : 'BESTSALLER'}
+            {isSearching ? `Kết quả tìm kiếm` : 'BEST SELLER'}
           </h1>
-          {searchQuery && searchResult.length === 0 && (
+          {isSearching && searchResults.length === 0 && (
             <div style={{ width: '100%', marginTop: '20px', textAlign: 'center' }}>
               <p style={{ color: 'rgb(45,88,83)', fontSize: '18px', fontWeight: 'bold' }}>
                 Không tìm thấy sản phẩm phù hợp.
@@ -428,7 +220,7 @@ const Dashboard = () => {
             </div>
           )}
           <div className="product-grid">
-            {(isSearching ? searchResult : products).map((product) => (
+            {(isSearching ? searchResults : products).map((product) => (
               <div key={product.id} className="product-card">
                 <div className="product-image-container">
                   <img
