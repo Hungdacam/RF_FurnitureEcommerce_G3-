@@ -1,6 +1,8 @@
 package com.rainbowforest.orderservice.entity.order_service.dto;
+
 import java.time.LocalDateTime;
 import java.util.List;
+
 import com.rainbowforest.orderservice.entity.order_service.entity.OrderStatus;
 
 public class OrderDto {
@@ -14,9 +16,10 @@ public class OrderDto {
     private LocalDateTime orderDate;
     private double totalAmount;
     private OrderStatus status;
+    private String invoiceCode; 
     private List<OrderItemDto> items;
 
-    // Getters and Setters
+   
     public Long getId() {
         return id;
     }
@@ -95,6 +98,14 @@ public class OrderDto {
 
     public void setStatus(OrderStatus status) {
         this.status = status;
+    }
+
+    public String getInvoiceCode() {
+        return invoiceCode;
+    }
+
+    public void setInvoiceCode(String invoiceCode) {
+        this.invoiceCode = invoiceCode;
     }
 
     public List<OrderItemDto> getItems() {

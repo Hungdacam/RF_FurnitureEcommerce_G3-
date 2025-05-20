@@ -91,7 +91,6 @@ export default function Checkout() {
         const newErrors = {};
         let formIsValid = true;
 
-        // Kiểm tra các trường bắt buộc
         ['firstName', 'lastName', 'phoneNumber', 'street'].forEach((field) => {
             const error = validateField(field, userDetails[field]);
             if (error) {
@@ -127,7 +126,6 @@ export default function Checkout() {
             }));
         }
 
-        // Kiểm tra lỗi ngay khi nhập
         const error = validateField(name, name === 'phoneNumber' ? value.replace(/[\s-]/g, '').replace(/^\+84/, '0') : value);
         setErrors((prev) => ({
             ...prev,
@@ -146,6 +144,14 @@ export default function Checkout() {
     const handlePlaceOrder = async () => {
         if (!isFormValid) {
             toast.error('Vui lòng sửa các lỗi trước khi đặt hàng!');
+            return;
+        }
+
+        // Làm mới giỏ hàng trước khi đặt hàng
+        try {
+            await getCart(authUser.userName);
+        } catch (error) {
+            toast.error('Lỗi khi làm mới giỏ hàng: ' + error.message);
             return;
         }
 
@@ -175,9 +181,36 @@ export default function Checkout() {
         };
 
         try {
-            await createOrder(orderData, navigate);
+            const response = await createOrder(orderData, navigate);
+            // Hiển thị mã hóa đơn sau khi đặt hàng thành công
+            toast.success(`Đặt hàng thành công! Mã hóa đơn của bạn: ${response.invoiceCode}`, {
+                duration: 5000,
+                action: {
+                    text: 'Xem đơn hàng',
+                    onClick: () => navigate('/orders')
+                }
+            });
+            // Làm mới giỏ hàng sau khi đặt hàng thành công
+            await getCart(authUser.userName);
         } catch (error) {
-            // Lỗi đã được xử lý trong useOrderStore, không cần xử lý thêm
+            await getCart(authUser.userName);
+            if (error.message.includes('Số lượng sản phẩm') || error.message.includes('không tồn tại')) {
+                toast.error('Vui lòng quay lại giỏ hàng để điều chỉnh số lượng hoặc xóa sản phẩm không khả dụng.', {
+                    duration: 5000,
+                    action: {
+                        text: 'Quay lại giỏ hàng',
+                        onClick: () => navigate('/cart')
+                    }
+                });
+            } else if (error.message.includes('Không có quyền')) {
+                toast.error('Lỗi quyền truy cập. Vui lòng đăng nhập lại hoặc liên hệ hỗ trợ.', {
+                    duration: 5000,
+                    action: {
+                        text: 'Đăng nhập',
+                        onClick: () => navigate('/login')
+                    }
+                });
+            }
         }
     };
 
@@ -244,7 +277,7 @@ export default function Checkout() {
                                     <div className="order-item-details">
                                         <h3>{item.productName}</h3>
                                         <p>Giá: ${item.price}</p>
-                                        <p>Số lượng: {item.quantity}</p>
+                                        <p>Số lượng: ${item.quantity}</p>
                                         <p>Tổng: ${(item.price * item.quantity).toFixed(2)}</p>
                                     </div>
                                 </div>

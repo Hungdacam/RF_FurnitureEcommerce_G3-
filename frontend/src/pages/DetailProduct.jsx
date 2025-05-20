@@ -1,54 +1,112 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useProductStore from '../stores/useProductStore';
+import useCartStore from '../stores/useCartStore';
+import useAuthStore from '../stores/useAuthStore';
 import '../css/DetailProduct.css';
 
 const DetailProduct = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const { products } = useProductStore();
+  const { products, fetchProductById } = useProductStore();
+  const { addToCart, cart, getCart } = useCartStore();
+  const { authUser } = useAuthStore();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [showNotification, setShowNotification] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    const fetchProduct = () => {
-      const selectedProduct = products.find((p) => p.id === parseInt(productId));
-      setProduct(selectedProduct);
-      setLoading(false);
+    const fetchProduct = async () => {
+      try {
+        await fetchProductById(productId);
+        const selectedProduct = products.find((p) => p.id === parseInt(productId));
+        setProduct(selectedProduct);
+      } catch (error) {
+        console.error('Lỗi khi lấy chi tiết sản phẩm:', error);
+      } finally {
+        setLoading(false);
+      }
     };
-    
-    fetchProduct();
-  }, [productId, products]);
 
-  // Hàm xử lý khi thêm vào giỏ hàng
-  const handleAddToCart = () => {
-    // Ở đây bạn có thể thêm logic thêm vào giỏ hàng, ví dụ:
-    // addToCart(product.id, quantity);
-    
-    // Hiển thị thông báo
-    setShowNotification(true);
-    
-    // Tự động ẩn thông báo sau 3 giây
-    setTimeout(() => {
-      setShowNotification(false);
-    }, 3000);
+    const fetchCart = async () => {
+      if (authUser) {
+        try {
+          await getCart(authUser.userName);
+        } catch (error) {
+          console.error('Lỗi khi lấy giỏ hàng:', error);
+        }
+      }
+    };
+
+    fetchProduct();
+    fetchCart();
+  }, [productId, products, fetchProductById, authUser, getCart]);
+
+  const handleAddToCart = async () => {
+    if (!authUser) {
+      try {
+        await addToCart(null, product.id, product.productName, product.price, quantity, false);
+        alert('Sản phẩm đã được thêm vào giỏ hàng tạm. Vui lòng đăng nhập để lưu vào giỏ hàng chính thức!');
+        navigate('/login');
+      } catch (error) {
+        alert('Lỗi khi thêm sản phẩm vào giỏ hàng tạm: ' + error.message);
+        console.error(error);
+      }
+      return;
+    }
+
+    // Tính số lượng sản phẩm đã có trong giỏ hàng
+    const existingItem = cart?.items?.find((item) => item.productId === parseInt(productId));
+    const currentQuantityInCart = existingItem ? existingItem.quantity : 0;
+    const totalRequestedQuantity = currentQuantityInCart + quantity;
+
+    // Kiểm tra tổng số lượng so với tồn kho
+    if (totalRequestedQuantity > product.quantity) {
+      setErrorMessage(
+        ` Số lượng tồn kho chỉ có (${product.quantity}). Bạn đã có (${currentQuantityInCart}) trong giỏ hàng. Chỉ được thêm (${product.quantity - currentQuantityInCart}) sản phẩm nữa!`
+      );
+      return;
+    }
+
+    try {
+      await addToCart(authUser.userName, product.id, product.productName, product.price, quantity, true);
+      setShowNotification(true);
+      setErrorMessage('');
+      setQuantity(1); // Reset số lượng sau khi thêm thành công
+      // Làm mới dữ liệu sản phẩm
+      await fetchProductById(productId);
+      const updatedProduct = products.find((p) => p.id === parseInt(productId));
+      setProduct(updatedProduct);
+      // Làm mới giỏ hàng
+      await getCart(authUser.userName);
+      setTimeout(() => setShowNotification(false), 3000);
+    } catch (error) {
+      setErrorMessage('Lỗi khi thêm sản phẩm vào giỏ hàng: ' + error.message);
+      console.error(error);
+    }
   };
 
-  // Tăng số lượng
+  const handleEditProduct = () => {
+    navigate('/product-management');
+  };
+
   const increaseQuantity = () => {
     if (quantity < product.quantity) {
       setQuantity(quantity + 1);
+      setErrorMessage('');
     }
   };
 
-  // Giảm số lượng
   const decreaseQuantity = () => {
     if (quantity > 1) {
       setQuantity(quantity - 1);
+      setErrorMessage('');
     }
   };
+
+  const isAdmin = authUser?.roles?.includes('ROLE_ADMIN');
 
   if (loading) {
     return <div className="loading-container">Đang tải thông tin sản phẩm...</div>;
@@ -91,51 +149,66 @@ const DetailProduct = () => {
               {product.quantity > 0 ? 'Còn hàng' : 'Hết hàng'}
             </span>
           </p>
-          
-          {/* Thêm chức năng giỏ hàng */}
+
           <div className="cart-actions">
-            <div className="quantity-selector">
-              <button 
-                className="quantity-btn" 
-                onClick={decreaseQuantity} 
-                disabled={quantity <= 1}
+            {!isAdmin && (
+              <>
+                <div className="quantity-selector">
+                  <button
+                    className="quantity-btn"
+                    onClick={decreaseQuantity}
+                    disabled={quantity <= 1}
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    className="quantity-input"
+                    value={quantity}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      if (!isNaN(value) && value >= 1 && value <= product.quantity) {
+                        setQuantity(value);
+                        setErrorMessage('');
+                      }
+                    }}
+                    min="1"
+                    max={product.quantity}
+                  />
+                  <button
+                    className="quantity-btn"
+                    onClick={increaseQuantity}
+                    disabled={quantity >= product.quantity}
+                  >
+                    +
+                  </button>
+                </div>
+                <button
+                  className="add-to-cart-btn"
+                  onClick={handleAddToCart}
+                  disabled={product.quantity === 0}
+                >
+                  <span className="cart-icon">🛒</span>
+                  Thêm vào giỏ hàng
+                </button>
+              </>
+            )}
+            {isAdmin && (
+              <button
+                className="edit-product-btn"
+                onClick={handleEditProduct}
               >
-                -
+                <span className="edit-icon">✎</span>
+                Sửa sản phẩm
               </button>
-              <input 
-                type="number" 
-                className="quantity-input" 
-                value={quantity} 
-                onChange={(e) => {
-                  const value = parseInt(e.target.value);
-                  if (!isNaN(value) && value >= 1 && value <= product.quantity) {
-                    setQuantity(value);
-                  }
-                }}
-                min="1"
-                max={product.quantity}
-              />
-              <button 
-                className="quantity-btn" 
-                onClick={increaseQuantity} 
-                disabled={quantity >= product.quantity}
-              >
-                +
-              </button>
-            </div>
-            <button 
-              className="add-to-cart-btn" 
-              onClick={handleAddToCart}
-              disabled={product.quantity === 0}
-            >
-              <span className="cart-icon">🛒</span>
-              Thêm vào giỏ hàng
-            </button>
+            )}
           </div>
+          {errorMessage && (
+            <p className="error-message">{errorMessage}</p>
+          )}
         </div>
       </div>
-      
-      {/* Thông báo thêm vào giỏ hàng */}
+
       {showNotification && (
         <div className="cart-notification">
           ✅ Đã thêm {quantity} sản phẩm vào giỏ hàng!

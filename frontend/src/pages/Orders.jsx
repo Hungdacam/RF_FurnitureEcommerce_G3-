@@ -10,6 +10,8 @@ export default function Orders() {
     const { orders, isLoadingOrders, getOrdersByUser, cancelOrder } = useOrderStore();
     const navigate = useNavigate();
     const [selectedStatus, setSelectedStatus] = useState('ALL');
+    const [selectedOrder, setSelectedOrder] = useState(null);
+    const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
 
     useEffect(() => {
         if (!authUser) {
@@ -27,13 +29,22 @@ export default function Orders() {
         getOrdersByUser(authUser.userName);
     }, [authUser, navigate, getOrdersByUser]);
 
-    // Lọc và sắp xếp orders dựa trên selectedStatus
     const filteredOrders = useMemo(() => {
         const filtered = selectedStatus === 'ALL'
             ? orders
             : orders.filter(order => order.status === selectedStatus);
         return [...filtered].sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
     }, [orders, selectedStatus]);
+
+    const openOrderModal = (order) => {
+        setSelectedOrder(order);
+        setIsOrderModalOpen(true);
+    };
+
+    const closeOrderModal = () => {
+        setIsOrderModalOpen(false);
+        setSelectedOrder(null);
+    };
 
     if (isLoadingOrders) {
         return <div className="loading">Đang tải đơn hàng...</div>;
@@ -68,23 +79,17 @@ export default function Orders() {
                     {filteredOrders.map((order) => (
                         <div key={order.id} className="order-item">
                             <h2>Đơn hàng #{order.id}</h2>
+                            <p><strong>Mã hóa đơn:</strong> {order.invoiceCode || 'N/A'}</p>
                             <p><strong>Ngày đặt:</strong> {new Date(order.orderDate).toLocaleString()}</p>
                             <p><strong>Trạng thái:</strong> {order.status === 'PENDING' ? 'Chờ xác nhận' : order.status === 'SHIPPING' ? 'Đang giao hàng' : order.status === 'DELIVERED' ? 'Giao thành công' : 'Đã hủy'}</p>
                             <p><strong>Tổng tiền:</strong> ${order.totalAmount.toFixed(2)}</p>
-                            <h3>Sản phẩm:</h3>
-                            <div className="order-items">
-                                {order.items.map((item, index) => (
-                                    <div key={index} className="order-item-detail">
-                                        <img src={item.imageUrl || '/images/placeholder.jpg'} alt={item.productName} className="order-item-image" />
-                                        <div>
-                                            <p><strong>{item.productName}</strong></p>
-                                            <p>Giá: ${item.price}</p>
-                                            <p>Số lượng: {item.quantity}</p>
-                                            <p>Tổng: ${(item.price * item.quantity).toFixed(2)}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                            <p><strong>Số lượng sản phẩm:</strong> {order.items.length}</p>
+                            <button
+                                className="view-order-button"
+                                onClick={() => openOrderModal(order)}
+                            >
+                                Xem chi tiết sản phẩm
+                            </button>
                             {order.status === 'PENDING' && (
                                 <button className="cancel-button" onClick={() => {
                                     if (window.confirm('Bạn có chắc muốn hủy đơn hàng này?')) {
@@ -94,6 +99,39 @@ export default function Orders() {
                             )}
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Modal chi tiết đơn hàng */}
+            {isOrderModalOpen && selectedOrder && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <h2>Chi tiết đơn hàng #{selectedOrder.id}</h2>
+                        <p><strong>Mã hóa đơn:</strong> {selectedOrder.invoiceCode || 'N/A'}</p>
+                        <div className="modal-order-items">
+                            {selectedOrder.items.map((item, index) => (
+                                <div key={index} className="modal-order-item">
+                                    <img
+                                        src={item.imageUrl || '/images/placeholder.jpg'}
+                                        alt={item.productName}
+                                        className="modal-order-image"
+                                    />
+                                    <div className="modal-order-info">
+                                        <p><strong>Tên:</strong> {item.productName}</p>
+                                        <p><strong>Giá:</strong> ${item.price.toFixed(2)}</p>
+                                        <p><strong>Số lượng:</strong> {item.quantity}</p>
+                                        <p><strong>Tổng:</strong> ${(item.price * item.quantity).toFixed(2)}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <p><strong>Tổng tiền đơn hàng:</strong> ${selectedOrder.totalAmount.toFixed(2)}</p>
+                        <div className="modal-actions">
+                            <button className="modal-close-button" onClick={closeOrderModal}>
+                                Đóng
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
