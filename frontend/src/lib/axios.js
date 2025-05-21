@@ -25,6 +25,15 @@ export const axiosOrder = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Tạo instance axios cho Statistics Service
+export const axiosStats = axios.create({
+  baseURL: 'http://localhost:8900/api/statistics',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 // Thêm interceptor để tự động thêm token vào header
 axiosInstance.interceptors.request.use(
   (config) => {
@@ -75,6 +84,18 @@ axiosCart.interceptors.request.use(
 );
 
 axiosOrder.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Thêm interceptor để tự động thêm token vào header
+axiosStats.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
     if (token) {

@@ -47,10 +47,12 @@ const Dashboard = () => {
       await addToCart(authUser.userName, product.id, product.productName, product.price, 1, true);
       alert('Đã thêm sản phẩm vào giỏ hàng!');
     } catch (error) {
-      alert('Lỗi khi thêm sản phẩm vào giỏ hàng!');
+      alert('Lỗi khi thêm sản phẩm vào giỏ hàng: ' + error.message);
       console.error(error);
     }
   };
+
+  const isAdmin = authUser?.roles?.includes('ROLE_ADMIN');
 
   if (isProductLoading || isCartLoading) {
     return (
@@ -235,13 +237,15 @@ const Dashboard = () => {
                   <div className="product-info">
                     <p className="product-price">${product.price}</p>
                   </div>
-                  <button
-                    className="add-to-cart-button"
-                    onClick={() => handleAddToCart(product)}
-                  >
-                    <span className="cart-icon">🛒</span>
-                    <span>Thêm vào giỏ hàng</span>
-                  </button>
+                  {!isAdmin && (
+                    <button
+                      className="add-to-cart-button"
+                      onClick={() => handleAddToCart(product)}
+                    >
+                      <span className="cart-icon">🛒</span>
+                      <span>Thêm vào giỏ hàng</span>
+                    </button>
+                  )}
                   <button
                     className="add-to-info-button"
                     onClick={() => navigate(`/product-detail/${product.id}`)}
