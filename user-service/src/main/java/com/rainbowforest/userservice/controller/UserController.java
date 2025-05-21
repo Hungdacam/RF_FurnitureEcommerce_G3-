@@ -9,6 +9,7 @@ import com.rainbowforest.userservice.dto.UserDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
@@ -197,10 +198,10 @@ public class UserController {
             @RequestBody Map<String, String> passwordData) {
         try {
             System.out.println("Nhận request cập nhật mật khẩu cho user ID: " + id);
-            
+
             String oldPassword = passwordData.get("oldPassword");
             String newPassword = passwordData.get("newPassword");
-            
+
             if (oldPassword == null || newPassword == null) {
                 return ResponseEntity.badRequest().body("Thiếu thông tin mật khẩu");
             }
@@ -224,6 +225,35 @@ public class UserController {
             System.err.println("Lỗi khi cập nhật mật khẩu: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Đã xảy ra lỗi khi cập nhật mật khẩu");
+        }
+    }
+
+    @PutMapping("/api/users/{id}/status")
+    public ResponseEntity<String> updateUserStatus(
+            @PathVariable("id") Long id,
+            @RequestBody Map<String, Integer> statusData) {
+        try {
+            Integer active = statusData.get("active");
+
+            if (active == null || (active != 0 && active != 1)) {
+                return ResponseEntity.badRequest().body("Trạng thái không hợp lệ");
+            }
+
+            User user = userService.getUserById(id);
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Cập nhật trạng thái
+            user.setActive(active);
+            userService.updateUserStatus(user); // Giả sử bạn có phương thức này hoặc sử dụng userRepository.save(user)
+
+            return ResponseEntity.ok("Đã cập nhật trạng thái người dùng thành công");
+        } catch (Exception e) {
+            System.err.println("Lỗi khi cập nhật trạng thái người dùng: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Đã xảy ra lỗi khi cập nhật trạng thái người dùng");
         }
     }
 

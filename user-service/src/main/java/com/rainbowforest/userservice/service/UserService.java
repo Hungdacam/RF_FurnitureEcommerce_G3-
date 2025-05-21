@@ -11,4 +11,5 @@ public interface UserService {
     User saveUser(User user);
     User updateUserDetails(User user);
     User updateUserPassword(User user);
+    User updateUserStatus(User user);
 }

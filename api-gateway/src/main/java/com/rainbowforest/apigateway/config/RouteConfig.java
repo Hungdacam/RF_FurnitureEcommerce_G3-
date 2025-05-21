@@ -128,7 +128,13 @@ public class RouteConfig {
                                                                                 "/api/users/$1/password")
                                                                 .preserveHostHeader())
                                                 .uri("lb://user-service"))
-
+                                .route("user-status-update", r -> r
+                                                .path("/api/users/*/status")
+                                                .filters(f -> f
+                                                                .rewritePath("/api/users/(.*)/status",
+                                                                                "/api/users/$1/status")
+                                                                .preserveHostHeader())
+                                                .uri("lb://user-service"))
                                 .build();
         }
 }

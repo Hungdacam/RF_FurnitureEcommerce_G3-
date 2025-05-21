@@ -73,5 +73,16 @@ public class UserServiceImpl implements UserService {
     public User updateUserPassword(User user) {
         return userRepository.save(user);
     }
+    
+    @Override
+    public User updateUserStatus(User user) {
+    // Chỉ cập nhật trạng thái, không làm thay đổi mật khẩu hoặc thông tin khác
+    User existingUser = userRepository.findById(user.getId()).orElse(null);
+    if (existingUser != null) {
+        existingUser.setActive(user.getActive());
+        return userRepository.save(existingUser);
+    }
+    return null;
+}
 
 }

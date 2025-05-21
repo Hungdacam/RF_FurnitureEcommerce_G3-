@@ -25,6 +25,11 @@ const Dashboard = () => {
   const [searchResult, setSearchResult] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  // Thêm hàm xử lý click vào nút Quản lý người dùng
+  const handleUserManagement = () => {
+    navigate('/user-management');
+  };
+
   const handleSearch = (keyword) => {
     setSelectedCategory(null);
     if (!keyword.trim()) return;
@@ -309,6 +314,22 @@ const Dashboard = () => {
                         onClick={handleOrderManagement}
                       >
                         Quản lý đơn hàng
+                      </button>
+                      {/* Thêm nút quản lý người dùng */}
+                      <button
+                        style={{
+                          padding: '10px 20px',
+                          backgroundColor: '#dc3545',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '5px',
+                          cursor: 'pointer',
+                          marginBottom: '10px',
+                          width: '100%',
+                        }}
+                        onClick={handleUserManagement}
+                      >
+                        Quản lý người dùng
                       </button>
                     </>
                   )}

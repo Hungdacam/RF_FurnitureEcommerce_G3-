@@ -11,6 +11,8 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import OrderManagement from './pages/OrderManagement';
 import Orders from './pages/Orders';
+import UserManagement from './pages/UserManagement';
+import UserDetail from './pages/UserDetail';
 const App = () => {
   return (
     <Router>
@@ -22,11 +24,13 @@ const App = () => {
         <Route path="/" element={<Login />} />
         <Route path="/product-management" element={<ProductManagement />} />
         <Route path="/product-detail/:productId" element={<DetailProduct />} />
-       <Route path="/profileUser" element={<ProfileUser />} />
-      <Route path="/cart" element={<Cart />} />
-      <Route path="/checkout" element={<Checkout />} />
-      <Route path="/orderManagement" element={<OrderManagement />} />
-      <Route path="/orders" element={<Orders />} />
+        <Route path="/profileUser" element={<ProfileUser />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/orderManagement" element={<OrderManagement />} />
+        <Route path="/orders" element={<Orders />} />
+        <Route path="/user-management" element={<UserManagement />} />
+        <Route path="/user-detail/:userId" element={<UserDetail />} />
       </Routes>
     </Router>
   );
