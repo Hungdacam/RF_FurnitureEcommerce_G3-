@@ -1,26 +1,25 @@
 import axios from 'axios';
 
 export const axiosInstance = axios.create({
-  baseURL: 'http://apigateway:8900', // Authentication Service
+  baseURL: '/api', // Đổi thành đường dẫn tương đối
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-export  const axiosCatalog = axios.create({
-  baseURL: 'http://apigateway:8900/api/catalog', // Product Catalog Service
- 
+export const axiosCatalog = axios.create({
+  baseURL: '/api/catalog', // Đổi thành đường dẫn tương đối
 });
 
 export const axiosCart = axios.create({
-  baseURL: 'http://apigateway:8900/api/cart', // Cart Service via Gateway
+  baseURL: '/api/cart', // Đổi thành đường dẫn tương đối
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 export const axiosOrder = axios.create({
-  baseURL: 'http://apigateway:8900/api/orders', // Order Service via Gateway
+  baseURL: '/api/orders', // Đổi thành đường dẫn tương đối
   headers: {
     'Content-Type': 'application/json',
   },

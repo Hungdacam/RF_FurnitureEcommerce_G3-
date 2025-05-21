@@ -1,163 +1,264 @@
-version: '3.9'
+
 
 services:
-  sql-server:
-    image: mcr.microsoft.com/azure-sql-edge:latest
-    privileged: true
-    container_name: sql-server-1
-    environment:
-      - ACCEPT_EULA=1
-      - MSSQL_SA_PASSWORD=Thang191042!   # mật khẩu phải có số, chữ hoa, chữ thường và ký tự đặc biệt
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
-      - "1433:1433"                       # map port 1433 host -> container
-    volumes:
-      - sql-server-data:/var/opt/mssql
+      - "5173:80"
+    environment:
+      - VITE_API_GATEWAY_URL=http://api-gateway:8900
+    depends_on:
+      api-gateway:
+        condition: service_started
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - app-network
-    healthcheck:
-      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "Thang191042!", "-Q", "SELECT 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8900:8900"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_REDIS_HOST=redis
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka
+    depends_on:
+      redis:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - app-network
 
   eureka-server:
     build:
       context: ./eureka-server
       dockerfile: Dockerfile
-    container_name: eureka-server
     ports:
       - "8761:8761"
-    networks:
-      - app-network
-    depends_on:
-      sql-server:
-        condition: service_healthy
-
-  apigateway:
-    build:
-      context: ./api-gateway
-      dockerfile: Dockerfile
-    container_name: apigateway
-    ports:
-      - "8900:8900"
     environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka
+      - SPRING_APPLICATION_JSON={"server":{"undertow":{"threads":{"io":16,"worker":128}}}}
+    deploy:
+      resources:
+        limits:
+          cpus: "0.6" # Tăng nhẹ để đảm bảo Eureka chạy ổn định
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - app-network
-    depends_on:
-      eureka-server:
-        condition: service_started
 
   user-service:
     build:
       context: ./user-service
       dockerfile: Dockerfile
-    container_name: user-service
     ports:
       - "8811:8811"
     environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-      - SPRING_DATASOURCE_URL=jdbc:sqlserver://sql-server:1433;databaseName=users;encrypt=true;trustServerCertificate=true;characterEncoding=UTF-8
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:sqlserver://sql-server:1433;databaseName=users;encrypt=true;trustServerCertificate=true;createDatabaseIfNotExist=true
       - SPRING_DATASOURCE_USERNAME=sa
-      - SPRING_DATASOURCE_PASSWORD=Thang191042!
-    networks:
-      - app-network
+      - SPRING_DATASOURCE_PASSWORD=${SQL_SA_PASSWORD}
     depends_on:
       sql-server:
         condition: service_healthy
       eureka-server:
         condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - app-network
 
   product-catalog-service:
     build:
       context: ./product-catalog-service
       dockerfile: Dockerfile
-    container_name: product-catalog-service
     ports:
       - "8810:8810"
     environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-      - SPRING_DATASOURCE_URL=jdbc:sqlserver://sql-server:1433;databaseName=product_catalog;encrypt=true;trustServerCertificate=true;characterEncoding=UTF-8
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:sqlserver://sql-server:1433;databaseName=product_catalog;encrypt=true;trustServerCertificate=true;createDatabaseIfNotExist=true
       - SPRING_DATASOURCE_USERNAME=sa
-      - SPRING_DATASOURCE_PASSWORD=Thang191042!
-    networks:
-      - app-network
+      - SPRING_DATASOURCE_PASSWORD=${SQL_SA_PASSWORD}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
     depends_on:
       sql-server:
         condition: service_healthy
       eureka-server:
         condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - app-network
 
   cart-service:
     build:
       context: ./cart-service
       dockerfile: Dockerfile
-    container_name: cart-service
     ports:
       - "8902:8902"
     environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-      - SPRING_DATASOURCE_URL=jdbc:sqlserver://sql-server:1433;databaseName=cart;encrypt=true;trustServerCertificate=true;characterEncoding=UTF-8
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:sqlserver://sql-server:1433;databaseName=cart;encrypt=true;trustServerCertificate=true;createDatabaseIfNotExist=true
       - SPRING_DATASOURCE_USERNAME=sa
-      - SPRING_DATASOURCE_PASSWORD=Thang191042!
-    networks:
-      - app-network
+      - SPRING_DATASOURCE_PASSWORD=${SQL_SA_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       sql-server:
         condition: service_healthy
       eureka-server:
         condition: service_started
-      product-catalog-service:
-        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - app-network
 
   order-service:
     build:
       context: ./order-service
       dockerfile: Dockerfile
-    container_name: order-service
     ports:
       - "8812:8812"
     environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-      - SPRING_DATASOURCE_URL=jdbc:sqlserver://sql-server:1433;databaseName=orders;encrypt=true;trustServerCertificate=true;characterEncoding=UTF-8
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:sqlserver://sql-server:1433;databaseName=orders;encrypt=true;trustServerCertificate=true;createDatabaseIfNotExist=true
       - SPRING_DATASOURCE_USERNAME=sa
-      - SPRING_DATASOURCE_PASSWORD=Thang191042!
-      - JWT_SECRET=rainbowforest-secure-key-should-be-very-long-and-complex-for-production-use
-    networks:
-      - app-network
+      - SPRING_DATASOURCE_PASSWORD=${SQL_SA_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - API_GATEWAY_URL=http://api-gateway:8900
     depends_on:
       sql-server:
         condition: service_healthy
       eureka-server:
         condition: service_started
+      api-gateway:
+        condition: service_started
       product-catalog-service:
         condition: service_started
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: frontend
-    ports:
-      - "3000:80"
+      cart-service:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - app-network
-    depends_on:
-      apigateway:
-        condition: service_started
 
   redis:
-    image: redis:latest
-    container_name: redis
+    image: redis:7.0-alpine
     ports:
       - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - app-network
+
+  sql-server:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD="Thang191042!"
+      - MSSQL_PID=Express
+    ports:
+      - "14333:1433"
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "Thang191042!", "-Q", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - mssql-data:/var/opt/mssql
+    deploy:
+      resources:
+        limits:
+          cpus: "1.2"
+          memory: 2.5G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - app-network
+
+volumes:
+  mssql-data:
+  redis-data:
 
 networks:
   app-network:
     driver: bridge
-
-volumes:
-  sql-server-data:
