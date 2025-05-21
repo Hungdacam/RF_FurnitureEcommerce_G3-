@@ -150,92 +150,97 @@ export default function Cart() {
     console.log('Selected items:', selectedItems);
 
     return (
-        <div className="cart-container">
-            <h1 className="cart-title">Giỏ Hàng Của Bạn</h1>
-            <div className="select-all-container">
-                <input
-                    type="checkbox"
-                    checked={localCartItems.every(
-                        (item) => !item.available || item.outOfStock || selectedItems[item.productId]
-                    )}
-                    onChange={handleSelectAll}
-                />
-                <label>Chọn tất cả</label>
-            </div>
-            <div className="cart-items">
-                {localCartItems.map((item, index) => (
-                    <div
-                        key={index}
-                        className={`cart-item ${!item.available || item.outOfStock ? 'unavailable' : ''}`}
-                    >
-                        <div className="cart-item-image">
-                            <img
-                                src={item.imageUrl || '/images/placeholder.jpg'}
-                                alt={item.productName}
-                                loading="lazy"
-                                onError={(e) => (e.target.src = '/images/placeholder.jpg')}
-                            />
-                        </div>
-                        <div className="cart-item-details">
-                            <div className="checkbox-container">
-                                <input
-                                    type="checkbox"
-                                    checked={!!selectedItems[item.productId]}
-                                    onChange={() => handleCheckboxChange(item.productId)}
-                                    disabled={!item.available || item.outOfStock}
+        <div className="cart-wrapper">
+            <button className="back-buttoncart" onClick={() => navigate('/dashboard')}>
+                ⬅ Quay lại
+            </button>
+            <div className="cart-container">
+                <h1 className="cart-title">Giỏ Hàng Của Bạn</h1>
+                <div className="checkbox-container1">
+                    <input
+                        type="checkbox"
+                        checked={localCartItems.every(
+                            (item) => !item.available || item.outOfStock || selectedItems[item.productId]
+                        )}
+                        onChange={handleSelectAll}
+                    />
+                    <label className='font'>Chọn tất cả</label>
+                </div>
+                <div className="cart-items">
+                    {localCartItems.map((item, index) => (
+                        <div
+                            key={index}
+                            className={`cart-item ${!item.available || item.outOfStock ? 'unavailable' : ''}`}
+                        >
+                            <div className="cart-item-image">
+                                <img
+                                    src={item.imageUrl || '/images/placeholder.jpg'}
+                                    alt={item.productName}
+                                    loading="lazy"
+                                    onError={(e) => (e.target.src = '/images/placeholder.jpg')}
                                 />
                             </div>
-                            <h3>{item.productName}</h3>
-                            {!item.available && (
-                                <p className="unavailable-message">Sản phẩm không tồn tại</p>
-                            )}
-                            {item.available && item.outOfStock && (
-                                <p className="unavailable-message">Sản phẩm đã hết hàng</p>
-                            )}
-                            <div className="quantity-control">
+                            <div className="cart-item-details">
+                                <div className="checkbox-container">
+                                    <input
+                                        type="checkbox"
+                                        checked={!!selectedItems[item.productId]}
+                                        onChange={() => handleCheckboxChange(item.productId)}
+                                        disabled={!item.available || item.outOfStock}
+                                    />
+                                </div>
+                                <h3 className="productName-title">{item.productName}</h3>
+                                {!item.available && (
+                                    <p className="unavailable-message">Sản phẩm không tồn tại</p>
+                                )}
+                                {item.available && item.outOfStock && (
+                                    <p className="unavailable-message">Sản phẩm đã hết hàng</p>
+                                )}
+                                <div className="quantity-control">
+                                    <button
+                                        onClick={() => handleQuantityChange(item.productId, item.quantity - 1)}
+                                        disabled={item.quantity <= 0 || !item.available || item.outOfStock}
+                                    >
+                                        -
+                                    </button>
+                                    <span>{item.quantity}</span>
+                                    <button
+                                        onClick={() => handleQuantityChange(item.productId, item.quantity + 1)}
+                                        disabled={!item.available || item.outOfStock}
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                                <p>Giá: ${item.price}</p>
+                                <p>Tổng: ${(item.price * item.quantity).toFixed(2)}</p>
                                 <button
-                                    onClick={() => handleQuantityChange(item.productId, item.quantity - 1)}
-                                    disabled={item.quantity <= 0 || !item.available || item.outOfStock}
+                                    className="remove-item-button"
+                                    onClick={() => handleRemoveItem(item.productId)}
                                 >
-                                    -
-                                </button>
-                                <span>{item.quantity}</span>
-                                <button
-                                    onClick={() => handleQuantityChange(item.productId, item.quantity + 1)}
-                                    disabled={!item.available || item.outOfStock}
-                                >
-                                    +
+                                    Xóa
                                 </button>
                             </div>
-                            <p>Giá: ${item.price}</p>
-                            <p>Tổng: ${(item.price * item.quantity).toFixed(2)}</p>
-                            <button
-                                className="remove-item-button"
-                                onClick={() => handleRemoveItem(item.productId)}
-                            >
-                                Xóa
-                            </button>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
+                <div className="cart-total">
+                    <h3>Tổng tiền (đã chọn): ${selectedTotal}</h3>
+                </div>
+                <button
+                    className="checkout-button"
+                    onClick={() => navigate('/checkout', { state: { selectedItems } })}
+                    disabled={hasUnavailableItems || !hasSelectedItems}
+                >
+                    Thanh Toán
+                </button>
+                {(hasUnavailableItems || !hasSelectedItems) && (
+                    <p className="checkout-warning">
+                        {hasUnavailableItems
+                            ? 'Vui lòng xóa các sản phẩm không tồn tại hoặc hết hàng trong số đã chọn.'
+                            : 'Vui lòng chọn ít nhất một sản phẩm để thanh toán.'}
+                    </p>
+                )}
             </div>
-            <div className="cart-total">
-                <h3>Tổng tiền (đã chọn): ${selectedTotal}</h3>
-            </div>
-            <button
-                className="checkout-button"
-                onClick={() => navigate('/checkout', { state: { selectedItems } })}
-                disabled={hasUnavailableItems || !hasSelectedItems}
-            >
-                Thanh Toán
-            </button>
-            {(hasUnavailableItems || !hasSelectedItems) && (
-                <p className="checkout-warning">
-                    {hasUnavailableItems
-                        ? 'Vui lòng xóa các sản phẩm không tồn tại hoặc hết hàng trong số đã chọn.'
-                        : 'Vui lòng chọn ít nhất một sản phẩm để thanh toán.'}
-                </p>
-            )}
         </div>
     );
 }

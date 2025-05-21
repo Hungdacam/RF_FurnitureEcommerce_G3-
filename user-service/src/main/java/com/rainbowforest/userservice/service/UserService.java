@@ -9,6 +9,6 @@ public interface UserService {
     User getUserById(Long id);
     User getUserByName(String userName);
     User saveUser(User user);
-
-
+    User updateUserDetails(User user);
+    User updateUserPassword(User user);
 }

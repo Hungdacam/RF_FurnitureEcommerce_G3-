@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useAuthStore from '../stores/useAuthStore';
-
+import '../css/Signup.css';
 const Signup = () => {
   const [formData, setFormData] = useState({
     userName: '',
@@ -116,7 +116,7 @@ const Signup = () => {
         </button>
       </form>
       
-      <p>
+      <p className="login-text">
         Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
       </p>
     </div>

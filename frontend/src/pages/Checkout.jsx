@@ -189,86 +189,91 @@ export default function Checkout() {
     const totalAmount = selectedCartItems.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2);
 
     return (
-        <div className="checkout-container">
-            <h1 className="checkout-title">Thanh Toán</h1>
-            <div className="checkout-content">
-                <div className="user-details">
-                    <h2>Thông Tin Người Nhận</h2>
-                    <div className="form-group">
-                        <label>Họ *</label>
-                        <input type="text" name="firstName" value={userDetails.firstName} onChange={handleInputChange} required />
-                        {errors.firstName && <p className="error-text">{errors.firstName}</p>}
-                    </div>
-                    <div className="form-group">
-                        <label>Tên *</label>
-                        <input type="text" name="lastName" value={userDetails.lastName} onChange={handleInputChange} required />
-                        {errors.lastName && <p className="error-text">{errors.lastName}</p>}
-                    </div>
-                    <div className="form-group">
-                        <label>Số điện thoại *</label>
-                        <input type="text" name="phoneNumber" value={userDetails.phoneNumber} onChange={handleInputChange} required placeholder="Ví dụ: 0912345678 hoặc +84912345678" />
-                        {errors.phoneNumber && <p className="error-text">{errors.phoneNumber}</p>}
-                    </div>
-                    <div className="form-group">
-                        <label>Đường *</label>
-                        <input type="text" name="street" value={userDetails.street} onChange={handleInputChange} required />
-                        {errors.street && <p className="error-text">{errors.street}</p>}
-                    </div>
-                    <div className="form-group">
-                        <label>Số nhà</label>
-                        <input type="text" name="streetNumber" value={userDetails.streetNumber} onChange={handleInputChange} />
-                    </div>
-                    <div className="form-group">
-                        <label>Mã bưu điện</label>
-                        <input type="text" name="zipCode" value={userDetails.zipCode} onChange={handleInputChange} />
-                    </div>
-                    <div className="form-group">
-                        <label>Thành phố</label>
-                        <input type="text" name="locality" value={userDetails.locality} onChange={handleInputChange} />
-                    </div>
-                    <div className="form-group">
-                        <label>Quốc gia</label>
-                        <input type="text" name="country" value={userDetails.country} onChange={handleInputChange} />
-                    </div>
-                    <button className="save-button" onClick={handleSaveUserDetails}>Lưu thông tin</button>
-                </div>
-                <div className="order-details">
-                    <h2>Chi Tiết Đơn Hàng</h2>
-                    {selectedCartItems.length === 0 ? (
-                        <p>Chưa có sản phẩm nào được chọn.</p>
-                    ) : (
-                        <div className="order-items">
-                            {selectedCartItems.map((item, index) => (
-                                <div key={index} className="order-item">
-                                    <img src={item.imageUrl || '/images/placeholder.jpg'} alt={item.productName} className="order-item-image" />
-                                    <div className="order-item-details">
-                                        <h3>{item.productName}</h3>
-                                        <p>Giá: ${item.price}</p>
-                                        <p>Số lượng: {item.quantity}</p>
-                                        <p>Tổng: ${(item.price * item.quantity).toFixed(2)}</p>
-                                    </div>
-                                </div>
-                            ))}
+        <div className="checkout-page">
+            <button className="back-button-checkkout" onClick={() => navigate('/dashboard')}>
+                ⬅ Quay lại
+            </button>
+            <div className="checkout-container">
+                <h1 className="checkout-title">Thanh Toán</h1>
+                <div className="checkout-content">
+                    <div className="user-details">
+                        <h2>Thông Tin Người Nhận</h2>
+                        <div className="form-group">
+                            <label>Họ *</label>
+                            <input type="text" name="firstName" value={userDetails.firstName} onChange={handleInputChange} required />
+                            {errors.firstName && <p className="error-text">{errors.firstName}</p>}
                         </div>
-                    )}
-                    <div className="order-note">
-                        <label>Lời nhắn cho shop</label>
-                        <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Nhập lời nhắn (nếu có)" />
+                        <div className="form-group">
+                            <label>Tên *</label>
+                            <input type="text" name="lastName" value={userDetails.lastName} onChange={handleInputChange} required />
+                            {errors.lastName && <p className="error-text">{errors.lastName}</p>}
+                        </div>
+                        <div className="form-group">
+                            <label>Số điện thoại *</label>
+                            <input type="text" name="phoneNumber" value={userDetails.phoneNumber} onChange={handleInputChange} required placeholder="Ví dụ: 0912345678 hoặc +84912345678" />
+                            {errors.phoneNumber && <p className="error-text">{errors.phoneNumber}</p>}
+                        </div>
+                        <div className="form-group">
+                            <label>Đường *</label>
+                            <input type="text" name="street" value={userDetails.street} onChange={handleInputChange} required />
+                            {errors.street && <p className="error-text">{errors.street}</p>}
+                        </div>
+                        <div className="form-group">
+                            <label>Số nhà</label>
+                            <input type="text" name="streetNumber" value={userDetails.streetNumber} onChange={handleInputChange} />
+                        </div>
+                        <div className="form-group">
+                            <label>Mã bưu điện</label>
+                            <input type="text" name="zipCode" value={userDetails.zipCode} onChange={handleInputChange} />
+                        </div>
+                        <div className="form-group">
+                            <label>Thành phố</label>
+                            <input type="text" name="locality" value={userDetails.locality} onChange={handleInputChange} />
+                        </div>
+                        <div className="form-group">
+                            <label>Quốc gia</label>
+                            <input type="text" name="country" value={userDetails.country} onChange={handleInputChange} />
+                        </div>
+                        <button className="save-button" onClick={handleSaveUserDetails}>Lưu thông tin</button>
                     </div>
-                    <div className="payment-method">
-                        <h3>Phương thức thanh toán</h3>
-                        <p>Thanh toán khi nhận hàng (COD)</p>
+                    <div className="order-details">
+                        <h2>Chi Tiết Đơn Hàng</h2>
+                        {selectedCartItems.length === 0 ? (
+                            <p>Chưa có sản phẩm nào được chọn.</p>
+                        ) : (
+                            <div className="order-items">
+                                {selectedCartItems.map((item, index) => (
+                                    <div key={index} className="order-item">
+                                        <img src={item.imageUrl || '/images/placeholder.jpg'} alt={item.productName} className="order-item-image1" />
+                                        <div className="order-item-details">
+                                            <h3>{item.productName}</h3>
+                                            <p>Giá: ${item.price}</p>
+                                            <p>Số lượng: {item.quantity}</p>
+                                            <p>Tổng: ${(item.price * item.quantity).toFixed(2)}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <div className="order-note">
+                            <label>Lời nhắn cho shop</label>
+                            <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Nhập lời nhắn (nếu có)" />
+                        </div>
+                        <div className="payment-method">
+                            <h3>Phương thức thanh toán</h3>
+                            <p>Thanh toán khi nhận hàng (COD)</p>
+                        </div>
+                        <div className="order-total">
+                            <h3>Tổng cộng: ${totalAmount}</h3>
+                        </div>
+                        <button
+                            className="place-order-button"
+                            onClick={handlePlaceOrder}
+                            disabled={selectedCartItems.length === 0 || isCreatingOrder || !isFormValid}
+                        >
+                            {isCreatingOrder ? 'Đang đặt hàng...' : 'Đặt Hàng'}
+                        </button>
                     </div>
-                    <div className="order-total">
-                        <h3>Tổng cộng: ${totalAmount}</h3>
-                    </div>
-                    <button
-                        className="place-order-button"
-                        onClick={handlePlaceOrder}
-                        disabled={selectedCartItems.length === 0 || isCreatingOrder || !isFormValid}
-                    >
-                        {isCreatingOrder ? 'Đang đặt hàng...' : 'Đặt Hàng'}
-                    </button>
                 </div>
             </div>
         </div>
