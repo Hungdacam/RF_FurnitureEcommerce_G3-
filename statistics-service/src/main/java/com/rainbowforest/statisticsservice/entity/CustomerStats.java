@@ -1,7 +1,7 @@
 package com.rainbowforest.statisticsservice.entity;
 
 import lombok.Data;
-import jakarta.persistence.*;
+import javax.persistence.*;
 
 @Entity
 @Table(name = "customer_stats")
