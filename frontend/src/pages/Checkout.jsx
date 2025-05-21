@@ -22,6 +22,7 @@ export default function Checkout() {
         locality: '',
         country: ''
     });
+    const [buyerPhoneNumber, setBuyerPhoneNumber] = useState(''); // Số điện thoại người mua
     const [note, setNote] = useState('');
     const [paymentMethod] = useState('COD');
     const [selectedItems, setSelectedItems] = useState({});
@@ -52,6 +53,9 @@ export default function Checkout() {
             country: ''
         });
 
+        // Lưu số điện thoại người mua từ authUser
+        setBuyerPhoneNumber(authUser.userDetails?.phoneNumber || '');
+
         getCart(authUser.userName);
 
         if (location.state?.selectedItems) {
@@ -61,13 +65,7 @@ export default function Checkout() {
 
     const validateField = (name, value) => {
         let error = '';
-        if (name === 'firstName' || name === 'lastName') {
-            if (!value) {
-                error = `${name === 'firstName' ? 'Họ' : 'Tên'} không được để trống!`;
-            } else if (!/^[a-zA-ZÀ-ỹ\s]+$/u.test(value)) {
-                error = `${name === 'firstName' ? 'Họ' : 'Tên'} chỉ chứa chữ cái và không chứa ký tự đặc biệt!`;
-            }
-        } else if (name === 'phoneNumber') {
+        if (name === 'phoneNumber') {
             if (!value) {
                 error = 'Số điện thoại không được để trống!';
             } else {
@@ -91,7 +89,7 @@ export default function Checkout() {
         const newErrors = {};
         let formIsValid = true;
 
-        ['firstName', 'lastName', 'phoneNumber', 'street'].forEach((field) => {
+        ['phoneNumber', 'street'].forEach((field) => {
             const error = validateField(field, userDetails[field]);
             if (error) {
                 newErrors[field] = error;
@@ -165,8 +163,10 @@ export default function Checkout() {
 
         const orderData = {
             userName: authUser.userName,
+            email: authUser.userDetails?.email || '', // Thêm email từ authUser
             fullName: `${userDetails.firstName} ${userDetails.lastName}`,
-            phoneNumber: userDetails.phoneNumber,
+            phoneNumber: userDetails.phoneNumber, // Số điện thoại người nhận
+            buyerPhoneNumber: buyerPhoneNumber, // Số điện thoại người mua
             address: `${userDetails.street} ${userDetails.streetNumber}, ${userDetails.locality}, ${userDetails.zipCode}, ${userDetails.country}`,
             note,
             paymentMethod,
@@ -223,22 +223,27 @@ export default function Checkout() {
 
     return (
         <div className="checkout-container">
+            <button className="back-button" onClick={() => navigate('/cart')}>
+        ⬅ Quay lại
+      </button>
             <h1 className="checkout-title">Thanh Toán</h1>
             <div className="checkout-content">
                 <div className="user-details">
                     <h2>Thông Tin Người Nhận</h2>
                     <div className="form-group">
                         <label>Họ *</label>
-                        <input type="text" name="firstName" value={userDetails.firstName} onChange={handleInputChange} required />
-                        {errors.firstName && <p className="error-text">{errors.firstName}</p>}
+                        <input type="text" name="firstName" value={userDetails.firstName} disabled />
                     </div>
                     <div className="form-group">
                         <label>Tên *</label>
-                        <input type="text" name="lastName" value={userDetails.lastName} onChange={handleInputChange} required />
-                        {errors.lastName && <p className="error-text">{errors.lastName}</p>}
+                        <input type="text" name="lastName" value={userDetails.lastName} disabled />
                     </div>
                     <div className="form-group">
-                        <label>Số điện thoại *</label>
+                        <label>Số điện thoại người mua</label>
+                        <input type="text" value={buyerPhoneNumber} disabled />
+                    </div>
+                    <div className="form-group">
+                        <label>Số điện thoại người nhận *</label>
                         <input type="text" name="phoneNumber" value={userDetails.phoneNumber} onChange={handleInputChange} required placeholder="Ví dụ: 0912345678 hoặc +84912345678" />
                         {errors.phoneNumber && <p className="error-text">{errors.phoneNumber}</p>}
                     </div>

@@ -37,7 +37,7 @@ public class SecurityConfig {
         http
                 .csrf().disable()
                 .authorizeRequests()
-                .mvcMatchers("/registration", "/login").permitAll()
+                .mvcMatchers("/registration","/api/registration","/registration/verify-otp","/verify-otp","/api/registration/verify-otp", "/login").permitAll()
                 // Sử dụng antMatchers cho các URL có tham số query
                 .mvcMatchers("/users").authenticated()
                 .mvcMatchers("/users/**").authenticated()

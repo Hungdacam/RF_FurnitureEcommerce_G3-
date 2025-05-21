@@ -46,4 +46,40 @@ public class UserServiceImpl implements UserService {
         user.setUserPassword(passwordEncoder.encode(user.getUserPassword()));
         return userRepository.save(user);
     }
+
+    @Override
+    public User updateUserDetails(User user) {
+        // Lấy user hiện tại từ database để giữ nguyên các thông tin quan trọng
+        User existingUser = userRepository.findById(user.getId()).orElse(null);
+        if (existingUser == null) {
+            return null; // Hoặc throw exception
+        }
+
+        // Chỉ cập nhật UserDetails, giữ nguyên các thông tin khác
+        if (user.getUserDetails() != null) {
+            existingUser.setUserDetails(user.getUserDetails());
+        }
+
+        // Giữ nguyên các thông tin quan trọng
+        // existingUser.setActive(existingUser.getActive());
+        // existingUser.setRole(existingUser.getRole());
+        // existingUser.setUserPassword(existingUser.getUserPassword());
+
+        return userRepository.save(existingUser);
+    }
+
+    @Override
+    public User updateUserPassword(User user) {
+        return userRepository.save(user);
+    }
+
+    @Override
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByUserDetailsEmail(email);
+    }
+
+    @Override
+    public boolean existsByPhoneNumber(String phoneNumber) {
+        return userRepository.existsByUserDetailsPhoneNumber(phoneNumber);
+    }
 }

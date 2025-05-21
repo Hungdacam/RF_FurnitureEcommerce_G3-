@@ -29,7 +29,7 @@ public class CartServiceImpl implements CartService {
 
     private static final String API_GATEWAY_URL = "http://localhost:8900/api/catalog";
 
-    @Override
+   @Override
     public Cart addToCart(String userName, Long productId, String productName, double price, int quantity,
             String jwtToken) {
         // Kiểm tra sản phẩm tồn tại
@@ -38,6 +38,11 @@ public class CartServiceImpl implements CartService {
                 ProductDTO.class);
         if (product == null) {
             throw new RuntimeException("Sản phẩm không tồn tại!");
+        }
+
+        // Kiểm tra số lượng tồn kho
+        if (product.getQuantity() < quantity) {
+            throw new RuntimeException("Số lượng sản phẩm không đủ! Chỉ còn " + product.getQuantity() + " sản phẩm.");
         }
 
         // Kiểm tra số lượng yêu cầu
@@ -76,7 +81,11 @@ public class CartServiceImpl implements CartService {
                 .orElse(null);
 
         if (existingItem != null) {
-            existingItem.setQuantity(existingItem.getQuantity() + quantity);
+            int newQuantity = existingItem.getQuantity() + quantity;
+            if (product.getQuantity() < newQuantity) {
+                throw new RuntimeException("Số lượng sản phẩm không đủ! Chỉ còn " + product.getQuantity() + " sản phẩm.");
+            }
+            existingItem.setQuantity(newQuantity);
             existingItem.setAvailable(true);
             existingItem.setImageUrl(product.getImageUrl());
         } else {

@@ -15,7 +15,7 @@ export default function OrderManagement() {
     const [selectedProductOrder, setSelectedProductOrder] = useState(null);
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [lastRefreshed, setLastRefreshed] = useState(null);
-    const [searchInvoiceCode, setSearchInvoiceCode] = useState(''); // State cho tìm kiếm mã hóa đơn
+    const [searchInvoiceCode, setSearchInvoiceCode] = useState('');
 
     useEffect(() => {
         if (!authUser || !authUser.roles.includes('ROLE_ADMIN')) {
@@ -45,7 +45,6 @@ export default function OrderManagement() {
             ? orders
             : orders.filter(order => order.status === selectedStatus);
 
-        // Lọc theo mã hóa đơn nếu có giá trị tìm kiếm
         if (searchInvoiceCode.trim()) {
             filtered = filtered.filter(order => 
                 order.invoiceCode && order.invoiceCode.toLowerCase().includes(searchInvoiceCode.toLowerCase())
@@ -175,7 +174,8 @@ export default function OrderManagement() {
                         <div className="modal-details">
                             <p><strong>Mã hóa đơn:</strong> {selectedOrder.invoiceCode || 'N/A'}</p>
                             <p><strong>Tên:</strong> {selectedOrder.fullName}</p>
-                            <p><strong>Số điện thoại:</strong> {selectedOrder.phoneNumber}</p>
+                            <p><strong>Số điện thoại người mua:</strong> {selectedOrder.buyerPhoneNumber}</p>
+                            <p><strong>Số điện thoại người nhận:</strong> {selectedOrder.phoneNumber}</p>
                             <p><strong>Địa chỉ:</strong> {selectedOrder.address}</p>
                         </div>
                         <div className="modal-actions">

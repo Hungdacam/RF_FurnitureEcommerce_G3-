@@ -211,7 +211,7 @@ export default function ProductManagement() {
             {showForm ? "Đóng Form" : "Thêm Sản Phẩm Mới"}
           </button>
           <button
-            className="view-products-button"
+            className="add-product-button"
             onClick={() => {
               setShowProductList((prev) => {
                 const next = !prev;

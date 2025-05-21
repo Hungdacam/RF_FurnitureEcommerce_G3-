@@ -8,4 +8,8 @@ import com.rainbowforest.userservice.entity.User;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
     User findByUserName(String userName);
+
+    boolean existsByUserDetailsEmail(String email);
+
+    boolean existsByUserDetailsPhoneNumber(String phoneNumber);
 }

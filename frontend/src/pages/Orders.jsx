@@ -2,12 +2,14 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/useAuthStore';
 import useOrderStore from '../stores/useOrderStore';
+import useCartStore from '../stores/useCartStore';
 import { toast } from 'react-hot-toast';
 import '../css/Orders.css';
 
 export default function Orders() {
     const { authUser } = useAuthStore();
     const { orders, isLoadingOrders, getOrdersByUser, cancelOrder } = useOrderStore();
+    const { rebuyOrder } = useCartStore();
     const navigate = useNavigate();
     const [selectedStatus, setSelectedStatus] = useState('ALL');
     const [selectedOrder, setSelectedOrder] = useState(null);
@@ -46,6 +48,27 @@ export default function Orders() {
         setSelectedOrder(null);
     };
 
+    const handleRebuyOrder = async (order) => {
+        const userName = authUser.userName;
+        const items = order.items.map(item => ({
+            productId: item.productId,
+            productName: item.productName,
+            price: item.price,
+            quantity: item.quantity
+        }));
+        const productIds = order.items.map(item => item.productId); // Lấy danh sách productId
+
+        try {
+            await rebuyOrder(userName, items);
+            toast.success('Đã thêm sản phẩm vào giỏ hàng thành công!');
+            // Chuyển hướng đến trang Cart, truyền productIds
+            navigate('/cart', { state: { rebuyProductIds: productIds } });
+        } catch (error) {
+            toast.error(`Lỗi: ${error.message || 'Không thể thêm vào giỏ hàng'}`);
+            console.error('Error rebuying order:', error);
+        }
+    };
+
     if (isLoadingOrders) {
         return <div className="loading">Đang tải đơn hàng...</div>;
     }
@@ -61,6 +84,9 @@ export default function Orders() {
     return (
         <div className="orders-container">
             <h1 className="orders-title">Lịch Sử Đơn Hàng</h1>
+            <button className="back-button" onClick={() => navigate('/dashboard')}>
+                ⬅ Trở về trang chủ
+            </button>
             <div className="status-tabs">
                 {statusTabs.map(tab => (
                     <button
@@ -96,6 +122,14 @@ export default function Orders() {
                                         cancelOrder(order.id);
                                     }
                                 }}>Hủy đơn hàng</button>
+                            )}
+                            {(order.status === 'CANCELLED' || order.status === 'DELIVERED') && (
+                                <button
+                                    className="rebuy-button"
+                                    onClick={() => handleRebuyOrder(order)}
+                                >
+                                    Mua lại
+                                </button>
                             )}
                         </div>
                     ))}

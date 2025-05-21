@@ -32,6 +32,7 @@ import com.rainbowforest.orderservice.entity.order_service.dto.ProductDTO;
 import com.rainbowforest.orderservice.entity.order_service.entity.Order;
 import com.rainbowforest.orderservice.entity.order_service.entity.OrderItem;
 import com.rainbowforest.orderservice.entity.order_service.service.OrderService;
+import com.rainbowforest.orderservice.entity.order_service.service.EmailService;
 
 @RestController
 @RequestMapping("/orders")
@@ -42,6 +43,9 @@ public class OrderController {
 
     @Autowired
     private RestTemplate restTemplate;
+
+    @Autowired
+    private EmailService emailService;
 
     @Autowired
     private HttpServletRequest request;
@@ -56,13 +60,14 @@ public class OrderController {
             String userName = (String) orderData.get("userName");
             String fullName = (String) orderData.get("fullName");
             String phoneNumber = (String) orderData.get("phoneNumber");
+            String buyerPhoneNumber = (String) orderData.get("buyerPhoneNumber");
             String address = (String) orderData.get("address");
             String note = (String) orderData.get("note");
             String paymentMethod = (String) orderData.get("paymentMethod");
             double totalAmount = Double.parseDouble(orderData.get("totalAmount").toString());
             List<Map<String, Object>> itemsData = (List<Map<String, Object>>) orderData.get("items");
 
-            // Kiểm tra số lượng tồn kho
+          
             for (Map<String, Object> item : itemsData) {
                 Long productId = Long.valueOf(item.get("productId").toString());
                 int requestedQuantity = Integer.parseInt(item.get("quantity").toString());
@@ -78,17 +83,20 @@ public class OrderController {
                     }
                     if (product.getQuantity() < requestedQuantity) {
                         return new ResponseEntity<>(
-                                Map.of("error", "Số lượng sản phẩm " + product.getProductName() + " không đủ! Chỉ còn " + product.getQuantity() + " sản phẩm."),
+                                Map.of("error",
+                                        "Số lượng sản phẩm " + product.getProductName() + " không đủ! Chỉ còn "
+                                                + product.getQuantity() + " sản phẩm."),
                                 HttpStatus.BAD_REQUEST);
                     }
                 } catch (HttpClientErrorException e) {
                     return new ResponseEntity<>(
-                            Map.of("error", "Không thể kiểm tra tồn kho cho sản phẩm " + productId + ": " + e.getMessage()),
+                            Map.of("error",
+                                    "Không thể kiểm tra tồn kho cho sản phẩm " + productId + ": " + e.getMessage()),
                             HttpStatus.SERVICE_UNAVAILABLE);
                 }
             }
 
-            // Tạo danh sách OrderItem
+           
             List<OrderItem> items = itemsData.stream().map(item -> {
                 OrderItem orderItem = new OrderItem();
                 orderItem.setProductId(Long.valueOf(item.get("productId").toString()));
@@ -99,11 +107,11 @@ public class OrderController {
                 return orderItem;
             }).toList();
 
-            // Tạo đơn hàng
-            Order order = orderService.createOrder(userName, fullName, phoneNumber, address, note, paymentMethod,
-                    totalAmount, items);
+       
+            Order order = orderService.createOrder(userName, fullName, phoneNumber, buyerPhoneNumber, address, note,
+                    paymentMethod, totalAmount, items);
 
-            // Giảm tồn kho
+           
             String jwtToken = getJwtToken();
             for (Map<String, Object> item : itemsData) {
                 Long productId = Long.valueOf(item.get("productId").toString());
@@ -136,10 +144,10 @@ public class OrderController {
                 }
             }
 
-            // Xóa sản phẩm khỏi giỏ hàng
             for (Map<String, Object> item : itemsData) {
                 Long productId = Long.valueOf(item.get("productId").toString());
-                String url = CART_API_URL + "/update-quantity?userName=" + userName + "&productId=" + productId + "&quantity=0";
+                String url = CART_API_URL + "/update-quantity?userName=" + userName + "&productId=" + productId
+                        + "&quantity=0";
 
                 HttpHeaders headers = new HttpHeaders();
                 if (jwtToken != null) {
@@ -162,7 +170,25 @@ public class OrderController {
                 }
             }
 
+            String recipientEmail = (String) orderData.get("email");
+            if (recipientEmail == null || recipientEmail.trim().isEmpty()) {
+                System.err.println("Không tìm thấy email trong orderData cho user: " + userName);
+            }
+
             OrderDto orderDto = convertToDto(order);
+
+            // Gửi email xác nhận
+            if (recipientEmail != null && !recipientEmail.trim().isEmpty()) {
+                try {
+                    emailService.sendOrderConfirmationEmail(recipientEmail, orderDto);
+                    System.out.println("Email xác nhận đã gửi thành công tới: " + recipientEmail);
+                } catch (Exception e) {
+                    System.err.println("Lỗi gửi email xác nhận tới " + recipientEmail + ": " + e.getMessage());
+                }
+            } else {
+                System.err.println("Không gửi được email xác nhận do thiếu email cho user: " + userName);
+            }
+
             return new ResponseEntity<>(orderDto, HttpStatus.OK);
         } catch (Exception e) {
             System.err.println("Lỗi tạo đơn hàng: " + e.getMessage());
@@ -216,6 +242,20 @@ public class OrderController {
             String jwtToken = getJwtToken();
             Order order = orderService.cancelOrder(orderId, jwtToken);
             OrderDto orderDto = convertToDto(order);
+
+            
+            String recipientEmail = null; 
+            if (recipientEmail != null && !recipientEmail.trim().isEmpty()) {
+                try {
+                    emailService.sendOrderCancellationEmail(recipientEmail, orderDto);
+                    System.out.println("Email hủy đơn hàng đã gửi thành công tới: " + recipientEmail);
+                } catch (Exception e) {
+                    System.err.println("Lỗi gửi email hủy đơn hàng tới " + recipientEmail + ": " + e.getMessage());
+                }
+            } else {
+                System.err.println("Không gửi được email hủy đơn do thiếu email cho user: " + order.getUserName());
+            }
+
             return new ResponseEntity<>(orderDto, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(
@@ -230,13 +270,14 @@ public class OrderController {
         orderDto.setUserName(order.getUserName());
         orderDto.setFullName(order.getFullName());
         orderDto.setPhoneNumber(order.getPhoneNumber());
+        orderDto.setBuyerPhoneNumber(order.getBuyerPhoneNumber());
         orderDto.setAddress(order.getAddress());
         orderDto.setNote(order.getNote());
         orderDto.setPaymentMethod(order.getPaymentMethod());
         orderDto.setOrderDate(order.getOrderDate());
         orderDto.setTotalAmount(order.getTotalAmount());
         orderDto.setStatus(order.getStatus());
-        orderDto.setInvoiceCode(order.getInvoiceCode()); // Ánh xạ mã hóa đơn
+        orderDto.setInvoiceCode(order.getInvoiceCode());
         orderDto.setItems(order.getItems().stream().map(item -> {
             OrderItemDto itemDto = new OrderItemDto();
             itemDto.setProductId(item.getProductId());

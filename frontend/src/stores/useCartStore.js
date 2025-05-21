@@ -141,6 +141,53 @@ const useCartStore = create((set) => ({
             set({ error: errorMessage, isLoading: false });
             throw new Error(errorMessage);
         }
+    },
+    
+    rebuyOrder: async (userName, items) => {
+        set({ isLoading: true, error: null });
+        try {
+            for (const item of items) {
+                const productId = item.productId;
+                const quantity = item.quantity;
+
+                // Kiểm tra tồn kho
+                const productResponse = await axiosCatalog.get(`/products/${productId}`);
+                const stockQuantity = productResponse.data.quantity;
+                if (quantity > stockQuantity) {
+                    throw new Error(
+                        `Số lượng sản phẩm ${item.productName} (${quantity}) vượt quá tồn kho (${stockQuantity})!`
+                    );
+                }
+
+                const token = localStorage.getItem('authToken');
+                await axiosCart.post('/add', null, {
+                    params: {
+                        userName,
+                        productId,
+                        productName: item.productName,
+                        price: item.price,
+                        quantity
+                    },
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+            }
+            const token = localStorage.getItem('authToken');
+
+            const response = await axiosCart.get('/get', {
+                params: { userName },
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            set({ cart: response.data, isLoading: false });
+            return response.data;
+        } catch (error) {
+            const errorMessage = error.response?.data || error.message;
+            set({ error: errorMessage, isLoading: false });
+            throw new Error(errorMessage);
+        }
     }
 }));
 

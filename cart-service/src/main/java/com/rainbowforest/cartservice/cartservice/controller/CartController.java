@@ -146,4 +146,32 @@ public class CartController {
             return new ResponseEntity<>("Lỗi khi thanh toán: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    
+    @PostMapping("/rebuy")
+    public ResponseEntity<?> rebuyOrder(@RequestBody Map<String, Object> rebuyData, HttpServletRequest request) {
+        try {
+            String userName = (String) rebuyData.get("userName");
+            List<Map<String, Object>> items = (List<Map<String, Object>>) rebuyData.get("items");
+            String jwt = request.getHeader("Authorization");
+            if (jwt == null || !jwt.startsWith("Bearer ")) {
+                return new ResponseEntity<>("Unauthorized", HttpStatus.UNAUTHORIZED);
+            }
+            jwt = jwt.substring(7);
+
+            for (Map<String, Object> item : items) {
+                Long productId = Long.valueOf(item.get("productId").toString());
+                String productName = (String) item.get("productName");
+                double price = Double.parseDouble(item.get("price").toString());
+                int quantity = Integer.parseInt(item.get("quantity").toString());
+                cartService.addToCart(userName, productId, productName, price, quantity, jwt);
+            }
+
+            return new ResponseEntity<>("Sản phẩm đã được thêm vào giỏ hàng", HttpStatus.OK);
+        } catch (Exception e) {
+            System.err.println("Error in rebuyOrder: " + e.getMessage());
+            e.printStackTrace();
+            return new ResponseEntity<>("Lỗi khi mua lại: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

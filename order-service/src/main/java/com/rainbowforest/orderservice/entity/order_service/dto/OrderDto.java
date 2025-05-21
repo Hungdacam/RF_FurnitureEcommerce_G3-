@@ -13,13 +13,21 @@ public class OrderDto {
     private String address;
     private String note;
     private String paymentMethod;
+    private String buyerPhoneNumber;
     private LocalDateTime orderDate;
     private double totalAmount;
     private OrderStatus status;
     private String invoiceCode; 
     private List<OrderItemDto> items;
 
-   
+     public String getBuyerPhoneNumber() {
+        return buyerPhoneNumber;
+    }
+
+    public void setBuyerPhoneNumber(String buyerPhoneNumber) {
+        this.buyerPhoneNumber = buyerPhoneNumber;
+    }
+    
     public Long getId() {
         return id;
     }

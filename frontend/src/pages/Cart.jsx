@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useCartStore from '../stores/useCartStore';
 import useAuthStore from '../stores/useAuthStore';
 import { axiosCatalog } from '../lib/axios';
-import { toast } from 'react-hot-toast'; // Thêm react-hot-toast
+import { toast } from 'react-hot-toast';
 import '../css/Cart.css';
 
 export default function Cart() {
     const { cart, getCart, updateCartItemQuantity, error, isLoading } = useCartStore();
     const { authUser } = useAuthStore();
     const navigate = useNavigate();
+    const location = useLocation();
     const [selectedItems, setSelectedItems] = useState({});
     const [localCartItems, setLocalCartItems] = useState([]);
     const [stockWarnings, setStockWarnings] = useState({});
@@ -22,13 +23,6 @@ export default function Cart() {
         }
 
         getCart(authUser.userName);
-
-        const intervalId = setInterval(() => {
-            getCart(authUser.userName);
-            console.log('Giỏ hàng được làm mới tự động');
-        }, 5000); // Giảm xuống 5 giây
-
-        return () => clearInterval(intervalId);
     }, [authUser, navigate, getCart]);
 
     useEffect(() => {
@@ -36,30 +30,74 @@ export default function Cart() {
             const newLocalCartItems = cart.items.map((item) => ({ ...item }));
             setLocalCartItems(newLocalCartItems);
 
-            const warnings = {};
-            newLocalCartItems.forEach((item) => {
-                if (item.available && !item.outOfStock && item.quantity > item.stockQuantity) {
-                    warnings[item.productId] = `Số lượng trong giỏ hàng (${item.quantity}) vượt quá tồn kho (${item.stockQuantity})!`;
-                }
-            });
-            setStockWarnings(warnings);
+            // Check and adjust stock quantities
+            const checkAndAdjustStock = async () => {
+                const updatedItems = [...newLocalCartItems];
+                const warnings = {};
+                let hasStockIssue = false;
 
+                for (const item of updatedItems) {
+                    try {
+                        const productResponse = await axiosCatalog.get(`/products/${item.productId}`);
+                        const latestStockQuantity = productResponse.data.quantity;
+
+                        if (item.quantity > latestStockQuantity) {
+                            hasStockIssue = true;
+                            warnings[item.productId] = `Tồn kho chỉ còn ${latestStockQuantity}, số lượng đã được điều chỉnh!`;
+                            updatedItems.forEach((i) => {
+                                if (i.productId === item.productId) {
+                                    i.quantity = latestStockQuantity;
+                                    i.stockQuantity = latestStockQuantity;
+                                }
+                            });
+                            // Update backend
+                            await updateCartItemQuantity(authUser.userName, item.productId, latestStockQuantity);
+                            toast.warn(`Sản phẩm ${item.productName}: ${warnings[item.productId]}`);
+                        } else {
+                            updatedItems.forEach((i) => {
+                                if (i.productId === item.productId) {
+                                    i.stockQuantity = latestStockQuantity;
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        console.error(`Error checking stock for product ${item.productId}:`, error);
+                    }
+                }
+
+                setLocalCartItems(updatedItems);
+                setStockWarnings(warnings);
+
+                if (hasStockIssue) {
+                    // Refresh cart from backend to ensure consistency
+                    await getCart(authUser.userName);
+                }
+            };
+
+            checkAndAdjustStock();
+
+            // Handle rebuy product selection
+            const rebuyProductIds = location.state?.rebuyProductIds || [];
             setSelectedItems((prevSelected) => {
-                const newSelectedItems = { ...prevSelected };
+                const newSelected = { ...prevSelected };
                 cart.items.forEach((item) => {
-                    if (!(item.productId in newSelectedItems)) {
-                        newSelectedItems[item.productId] = false;
+                    if (rebuyProductIds.length > 0 && rebuyProductIds.includes(item.productId) && item.available && !item.outOfStock) {
+                        newSelected[item.productId] = true;
                     }
                 });
-                Object.keys(newSelectedItems).forEach((productId) => {
+                Object.keys(newSelected).forEach((productId) => {
                     if (!cart.items.some((item) => item.productId === Number(productId))) {
-                        delete newSelectedItems[productId];
+                        delete newSelected[productId];
                     }
                 });
-                return newSelectedItems;
+                return newSelected;
             });
+
+            if (rebuyProductIds.length > 0) {
+                navigate(location.pathname, { replace: true, state: {} });
+            }
         }
-    }, [cart]);
+    }, [cart, location.state, navigate, authUser.userName, getCart, updateCartItemQuantity]);
 
     const handleQuantityChange = async (productId, newQuantity) => {
         if (newQuantity < 0) {
@@ -74,7 +112,6 @@ export default function Cart() {
 
         console.log(`handleQuantityChange: productId=${productId}, newQuantity=${newQuantity}, localStockQuantity=${item.stockQuantity}`);
 
-        // Kiểm tra tồn kho mới nhất
         try {
             const productResponse = await axiosCatalog.get(`/products/${productId}`);
             const latestStockQuantity = productResponse.data.quantity;
@@ -82,12 +119,6 @@ export default function Cart() {
 
             if (newQuantity > latestStockQuantity) {
                 toast.error(`Không thể tăng số lượng! Tồn kho hiện tại chỉ còn ${latestStockQuantity} sản phẩm.`);
-                // Cập nhật localCartItems với tồn kho mới nhất
-                setLocalCartItems((prevItems) =>
-                    prevItems.map((i) =>
-                        i.productId === productId ? { ...i, stockQuantity: latestStockQuantity } : i
-                    )
-                );
                 return;
             }
 
@@ -113,13 +144,11 @@ export default function Cart() {
 
             try {
                 await updateCartItemQuantity(authUser.userName, productId, newQuantity);
-                if (newQuantity <= latestStockQuantity) {
-                    setStockWarnings((prev) => {
-                        const newWarnings = { ...prev };
-                        delete newWarnings[productId];
-                        return newWarnings;
-                    });
-                }
+                setStockWarnings((prev) => {
+                    const newWarnings = { ...prev };
+                    delete newWarnings[productId];
+                    return newWarnings;
+                });
             } catch (error) {
                 toast.error(error.message);
                 setLocalCartItems(cart.items.map((item) => ({ ...item })));
@@ -159,19 +188,17 @@ export default function Cart() {
     const handleCheckboxChange = (productId) => {
         setSelectedItems((prev) => ({
             ...prev,
-            [productId]: !prev[productId],
+            [productId]: !prev[productId] || false,
         }));
     };
 
     const handleSelectAll = (e) => {
         const isChecked = e.target.checked;
-        setSelectedItems((prev) => {
-            const newSelected = { ...prev };
-            localCartItems.forEach((item) => {
-                newSelected[item.productId] = isChecked && item.available && !item.outOfStock;
-            });
-            return newSelected;
+        const newSelected = {};
+        localCartItems.forEach((item) => {
+            newSelected[item.productId] = isChecked && item.available && !item.outOfStock;
         });
+        setSelectedItems(newSelected);
     };
 
     if (isLoading) {
@@ -188,7 +215,14 @@ export default function Cart() {
     }
 
     if (!localCartItems.length) {
-        return <div className="empty-cart">Giỏ hàng của bạn đang trống</div>;
+        return (
+            <div className="empty-cart">
+                <button className="back-button" onClick={() => navigate('/dashboard')}>
+                    ⬅ Quay lại
+                </button>
+                Giỏ hàng của bạn đang trống
+            </div>
+        );
     }
 
     const hasUnavailableItems = localCartItems.some(
@@ -210,6 +244,9 @@ export default function Cart() {
     return (
         <div className="cart-container">
             <h1 className="cart-title">Giỏ Hàng Của Bạn</h1>
+            <button className="back-button" onClick={() => navigate('/dashboard')}>
+                ⬅ Quay lại
+            </button>
             <div className="select-all-container">
                 <input
                     type="checkbox"

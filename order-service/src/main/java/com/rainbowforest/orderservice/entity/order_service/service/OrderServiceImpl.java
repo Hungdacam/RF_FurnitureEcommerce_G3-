@@ -41,12 +41,13 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public Order createOrder(String userName, String fullName, String phoneNumber, String address, String note,
+    public Order createOrder(String userName, String fullName, String phoneNumber, String buyerPhoneNumber, String address, String note,
             String paymentMethod, double totalAmount, List<OrderItem> items) {
         Order order = new Order();
         order.setUserName(userName);
         order.setFullName(fullName);
         order.setPhoneNumber(phoneNumber);
+        order.setBuyerPhoneNumber(buyerPhoneNumber); // Thêm số điện thoại người mua
         order.setAddress(address);
         order.setNote(note);
         order.setPaymentMethod(paymentMethod);
@@ -55,23 +56,22 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(OrderStatus.PENDING);
         order.setItems(items);
 
-       
         String invoiceCode = generateInvoiceCode(order.getOrderDate());
         order.setInvoiceCode(invoiceCode);
 
         return orderRepository.save(order);
     }
 
-   private String generateInvoiceCode(LocalDateTime orderDate) {
-    String datePart = orderDate.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-    LocalDate today = orderDate.toLocalDate();
-    LocalDateTime start = today.atStartOfDay();
-    LocalDateTime end = today.plusDays(1).atStartOfDay();
+    private String generateInvoiceCode(LocalDateTime orderDate) {
+        String datePart = orderDate.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        LocalDate today = orderDate.toLocalDate();
+        LocalDateTime start = today.atStartOfDay();
+        LocalDateTime end = today.plusDays(1).atStartOfDay();
 
-    long count = orderRepository.countOrdersInDay(start, end);
-    String sequence = String.format("%03d", count + 1); 
-    return "INV-" + datePart + "-" + sequence;
-}
+        long count = orderRepository.countOrdersInDay(start, end);
+        String sequence = String.format("%03d", count + 1); 
+        return "INV-" + datePart + "-" + sequence;
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -167,12 +167,13 @@ public class OrderServiceImpl implements OrderService {
 
             document.add(
                     new Paragraph("HÓA ĐƠN ĐẶT HÀNG").setTextAlignment(TextAlignment.CENTER).setBold().setFontSize(16));
-            document.add(new Paragraph("Mã hóa đơn: " + order.getInvoiceCode())); // Hiển thị mã hóa đơn trong PDF
+            document.add(new Paragraph("Mã hóa đơn: " + order.getInvoiceCode()));
             document.add(new Paragraph("Mã đơn hàng: " + order.getId()));
             document.add(new Paragraph("Ngày đặt hàng: "
                     + order.getOrderDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))));
             document.add(new Paragraph("Khách hàng: " + order.getFullName()));
-            document.add(new Paragraph("Số điện thoại: " + order.getPhoneNumber()));
+            document.add(new Paragraph("Số điện thoại người mua: " + order.getBuyerPhoneNumber()));
+            document.add(new Paragraph("Số điện thoại người nhận: " + order.getPhoneNumber()));
             document.add(new Paragraph("Địa chỉ: " + order.getAddress()));
             if (order.getNote() != null && !order.getNote().isEmpty()) {
                 document.add(new Paragraph("Lời nhắn: " + order.getNote()));

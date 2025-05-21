@@ -1,16 +1,16 @@
 package com.rainbowforest.userservice.entity;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
-import javax.validation.constraints.Email;
+import javax.validation.constraints.*;
 
 public class RegisterRequest {
+
     @NotBlank(message = "Tên đăng nhập không được để trống")
-    @Size(min = 3, max = 50, message = "Tên đăng nhập phải từ 3-50 ký tự")
     private String userName;
 
     @NotBlank(message = "Mật khẩu không được để trống")
-    @Size(min = 6, max = 50, message = "Mật khẩu phải từ 6-50 ký tự")
+    @Size(min = 6, message = "Mật khẩu phải có ít nhất 6 ký tự")
+    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{6,}$",
+             message = "Mật khẩu phải có chữ hoa, chữ thường, số và ký tự đặc biệt")
     private String userPassword;
 
     @NotBlank(message = "Họ không được để trống")
@@ -23,9 +23,11 @@ public class RegisterRequest {
     @Email(message = "Email không hợp lệ")
     private String email;
 
+    @NotBlank(message = "Số điện thoại không được để trống")
+    @Pattern(regexp = "^\\d{10}$", message = "Số điện thoại phải gồm 10 chữ số")
     private String phoneNumber;
 
-    // Getters and setters
+    // Getters và Setters
     public String getUserName() {
         return userName;
     }

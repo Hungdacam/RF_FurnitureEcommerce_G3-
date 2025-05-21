@@ -6,7 +6,7 @@ import com.rainbowforest.orderservice.entity.order_service.entity.Order;
 import com.rainbowforest.orderservice.entity.order_service.entity.OrderItem;
 
 public interface OrderService {
-    Order createOrder(String userName, String fullName, String phoneNumber, String address, String note, String paymentMethod, double totalAmount, List<OrderItem> items);
+    Order createOrder(String userName, String fullName, String phoneNumber,String buyerPhoneNumber , String address, String note, String paymentMethod, double totalAmount, List<OrderItem> items);
     List<Order> getOrdersByUserName(String userName);
     Order updateOrderStatus(Long orderId, String status);
     Order cancelOrder(Long orderId, String jwtToken);

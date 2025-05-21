@@ -52,13 +52,25 @@ public class Order {
     private OrderStatus status = OrderStatus.PENDING;
 
     @Column(name = "invoice_code", unique = true, columnDefinition = "NVARCHAR(50)")
-    private String invoiceCode; // Thêm thuộc tính mã hóa đơn
+    private String invoiceCode; 
 
     @ElementCollection
     @CollectionTable(name = "order_items", joinColumns = @JoinColumn(name = "order_id"))
     private List<OrderItem> items = new ArrayList<>();
 
-    // Getters và Setters
+     @Column(name = "buyer_phone_number",columnDefinition = "NVARCHAR(20)")
+    private String buyerPhoneNumber;
+    
+
+
+     public String getBuyerPhoneNumber() {
+        return buyerPhoneNumber;
+    }
+
+    public void setBuyerPhoneNumber(String buyerPhoneNumber) {
+        this.buyerPhoneNumber = buyerPhoneNumber;
+    }
+
     public Long getId() {
         return id;
     }
