@@ -99,6 +99,14 @@ public class RouteConfig {
                                         .setName("cartServiceCircuitBreaker")
                                         .setFallbackUri("forward:/fallback/cart")))
                         .uri("lb://cart-service"))
+                .route("statistics-service", r -> r
+                        .path("/api/statistics/**")
+                        .filters(f -> f
+                                .rewritePath("/api/statistics/(?<segment>.*)", "/api/statistics/${segment}")
+                                .circuitBreaker(config -> config
+                                        .setName("statisticsServiceCircuitBreaker")
+                                        .setFallbackUri("forward:/fallback/statistics")))
+                        .uri("lb://statistics-service"))
                 .build();
     }
 }

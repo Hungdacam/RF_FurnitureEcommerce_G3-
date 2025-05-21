@@ -41,4 +41,12 @@ public class FallbackController {
         response.put("message", "Product Recommendation Service is currently unavailable. Please try again later.");
         return Mono.just(ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response));
     }
+
+    @GetMapping("/statistics")
+    public Mono<ResponseEntity<Map<String, String>>> statisticsServiceFallback() {
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Statistics Service is currently unavailable. Please try again later.");
+        return Mono.just(ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response));
+    }
+
 }
