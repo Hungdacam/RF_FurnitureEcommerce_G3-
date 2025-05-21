@@ -26,13 +26,20 @@ public class SessionFilter implements GlobalFilter, Ordered {
                     String sessionId = webSession.getId();
                     logger.info("Session ID: {}", sessionId);
 
+                    // Lấy cookie hiện tại
+                    String existingCookies = exchange.getRequest().getHeaders().getFirst("Cookie");
+                    String newCookieHeader = (existingCookies != null) ?
+                            existingCookies + "; JSESSIONID=" + sessionId :
+                            "JSESSIONID=" + sessionId;
+
                     ServerHttpRequest mutatedRequest = exchange.getRequest()
                             .mutate()
-                            .header("Cookie", sessionId)
+                            .header("Cookie", newCookieHeader)
                             .build();
 
                     return chain.filter(exchange.mutate().request(mutatedRequest).build());
                 });
+
     }
 
     @Override
