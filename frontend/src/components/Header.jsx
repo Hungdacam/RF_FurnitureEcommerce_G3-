@@ -6,7 +6,7 @@ import '../css/Header.css';
 
 const Header = () => {
   const { authUser, logout } = useAuthStore();
-  const { products, searchProducts, filterByCategory, resetSearch } = useProductStore();
+  const { searchProducts, filterByCategory } = useProductStore();
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
@@ -75,6 +75,13 @@ const Header = () => {
   const handleOrderManagement = () => {
     if (authUser?.roles?.includes('ROLE_ADMIN')) {
       navigate('/orderManagement');
+    } else {
+      alert('Bạn không có quyền truy cập vào trang này!');
+    }
+  };
+  const handleStatistics = () => {
+    if (authUser?.roles?.includes('ROLE_ADMIN')) {
+      navigate('/statistics');
     } else {
       alert('Bạn không có quyền truy cập vào trang này!');
     }
@@ -216,6 +223,13 @@ const Header = () => {
                             </svg>
                             Quản lý đơn hàng
                           </button>
+                          <button className="dropdown-link" onClick={handleStatistics}>
+                            <svg className="dropdown-icon" viewBox="0 0 24 24">
+                              <path d="M3 17h2v-7H3v7zm4 0h2V7H7v10zm4 0h2v-4h-2v4zm4 0h2V4h-2v13zm4 0h2v-9h-2v9z" />
+                            </svg>
+                            Thống kê
+                          </button>
+
                         </>
                       ) : (
                         <button className="dropdown-link" onClick={handleViewOrders}>

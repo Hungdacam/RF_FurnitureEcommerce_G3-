@@ -14,6 +14,7 @@ import Orders from './pages/Orders';
 import Header from './components/Header';
 import ProtectedRoute from './components/ProtectedRoute';
 import useAuthStore from './stores/useAuthStore';
+import Statistics from './pages/Statistics';
 const App = () => {
   const { checkAuth, isCheckingAuth } = useAuthStore();
 
@@ -53,6 +54,14 @@ const App = () => {
                 </ProtectedRoute>
               }
             />
+            <Route
+                path="/statistics"
+                element={
+                  <ProtectedRoute requiredRole="ROLE_ADMIN">
+                    <Statistics />
+                  </ProtectedRoute>
+                }
+              />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/orderManagement" element={<OrderManagement />} />
