@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { axiosCatalog, axiosCart } from '../lib/axios';
+import { axiosCatalog } from '../lib/axios';
 import { toast } from 'react-hot-toast';
 
 const useProductStore = create((set) => ({
@@ -28,13 +28,16 @@ const useProductStore = create((set) => ({
     try {
       const res = await axiosCatalog.get(`products/${id}`);
       set({ product: res.data });
+      return res.data; // <-- Thêm dòng này để trả về dữ liệu sản phẩm
     } catch (error) {
       toast.error('Failed to fetch product details');
       console.error(error);
+      return null; // <-- Trả về null khi lỗi
     } finally {
       set({ isLoading: false });
     }
   },
+
 
   fetchProductsByCategory: async (category) => {
     set({ isLoading: true });

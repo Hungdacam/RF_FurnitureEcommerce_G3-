@@ -1,13 +1,20 @@
 package com.rainbowforest.orderservice.entity.order_service.service;
 
 import java.io.File;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
@@ -15,6 +22,7 @@ import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.properties.TextAlignment;
+import com.rainbowforest.orderservice.entity.order_service.dto.ProductDTO;
 import com.rainbowforest.orderservice.entity.order_service.entity.Order;
 import com.rainbowforest.orderservice.entity.order_service.entity.OrderItem;
 import com.rainbowforest.orderservice.entity.order_service.entity.OrderStatus;
@@ -22,17 +30,24 @@ import com.rainbowforest.orderservice.entity.order_service.repository.OrderRepos
 
 @Service
 public class OrderServiceImpl implements OrderService {
-    
+
     @Autowired
     private OrderRepository orderRepository;
 
+    @Autowired
+    private RestTemplate restTemplate;
+
+    private static final String API_GATEWAY_URL = "http://localhost:8900/api/catalog";
+
     @Override
     @Transactional
-    public Order createOrder(String userName, String fullName, String phoneNumber, String address, String note, String paymentMethod, double totalAmount, List<OrderItem> items) {
+    public Order createOrder(String userName, String fullName, String phoneNumber, String buyerPhoneNumber, String address, String note,
+            String paymentMethod, double totalAmount, List<OrderItem> items) {
         Order order = new Order();
         order.setUserName(userName);
         order.setFullName(fullName);
         order.setPhoneNumber(phoneNumber);
+        order.setBuyerPhoneNumber(buyerPhoneNumber);
         order.setAddress(address);
         order.setNote(note);
         order.setPaymentMethod(paymentMethod);
@@ -40,7 +55,22 @@ public class OrderServiceImpl implements OrderService {
         order.setTotalAmount(totalAmount);
         order.setStatus(OrderStatus.PENDING);
         order.setItems(items);
+
+        String invoiceCode = generateInvoiceCode(order.getOrderDate());
+        order.setInvoiceCode(invoiceCode);
+
         return orderRepository.save(order);
+    }
+
+    private String generateInvoiceCode(LocalDateTime orderDate) {
+        String datePart = orderDate.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        LocalDate today = orderDate.toLocalDate();
+        LocalDateTime start = today.atStartOfDay();
+        LocalDateTime end = today.plusDays(1).atStartOfDay();
+
+        long count = orderRepository.countOrdersInDay(start, end);
+        String sequence = String.format("%03d", count + 1);
+        return "INV-" + datePart + "-" + sequence;
     }
 
     @Override
@@ -65,12 +95,67 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public Order cancelOrder(Long orderId) {
+    public Order updateOrderContactInfo(Long orderId, String phoneNumber, String address) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng!"));
+        if (!phoneNumber.matches("\\d{10}")) {
+            throw new RuntimeException("Số điện thoại phải gồm 10 chữ số!");
+        }
+        if (address == null || address.trim().isEmpty()) {
+            throw new RuntimeException("Địa chỉ không được để trống!");
+        }
+        if (address.length() > 500) {
+            throw new RuntimeException("Địa chỉ không được vượt quá 500 ký tự!");
+        }
+        order.setPhoneNumber(phoneNumber);
+        order.setAddress(address);
+        return orderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public Order cancelOrder(Long orderId, String jwtToken) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng!"));
         if (order.getStatus() != OrderStatus.PENDING) {
             throw new RuntimeException("Chỉ có thể hủy đơn hàng ở trạng thái chờ xác nhận!");
         }
+
+        for (OrderItem item : order.getItems()) {
+            Long productId = item.getProductId();
+            int quantityToRestore = item.getQuantity();
+
+            try {
+                ProductDTO product = restTemplate.getForObject(
+                        API_GATEWAY_URL + "/products/" + productId,
+                        ProductDTO.class);
+                if (product == null) {
+                    throw new RuntimeException("Sản phẩm " + productId + " không tồn tại!");
+                }
+
+                MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+                map.add("product_name", product.getProductName());
+                map.add("category", product.getCategory());
+                map.add("description", product.getDescription() != null ? product.getDescription() : "");
+                map.add("price", product.getPrice().toString());
+                map.add("quantity", String.valueOf(product.getQuantity() + quantityToRestore));
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+                if (jwtToken != null) {
+                    headers.set("Authorization", "Bearer " + jwtToken);
+                }
+
+                HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(map, headers);
+
+                restTemplate.put(API_GATEWAY_URL + "/admin/products/" + productId, requestEntity);
+                System.out.println("Hoàn lại " + quantityToRestore + " sản phẩm ID " + productId + " vào kho");
+            } catch (Exception e) {
+                System.err.println("Lỗi khi hoàn lại sản phẩm " + productId + ": " + e.getMessage());
+                throw new RuntimeException("Lỗi khi hoàn lại sản phẩm " + productId + ": " + e.getMessage());
+            }
+        }
+
         order.setStatus(OrderStatus.CANCELLED);
         return orderRepository.save(order);
     }
@@ -89,16 +174,21 @@ public class OrderServiceImpl implements OrderService {
                 dir.mkdirs();
             }
 
-            String fileName = invoicesDir + "/invoice_" + order.getId() + "_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".pdf";
+            String fileName = invoicesDir + "/invoice_" + order.getId() + "_"
+                    + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".pdf";
             PdfWriter writer = new PdfWriter(fileName);
             PdfDocument pdf = new PdfDocument(writer);
             Document document = new Document(pdf);
 
-            document.add(new Paragraph("HÓA ĐƠN ĐẶT HÀNG").setTextAlignment(TextAlignment.CENTER).setBold().setFontSize(16));
+            document.add(
+                    new Paragraph("HÓA ĐƠN ĐẶT HÀNG").setTextAlignment(TextAlignment.CENTER).setBold().setFontSize(16));
+            document.add(new Paragraph("Mã hóa đơn: " + order.getInvoiceCode()));
             document.add(new Paragraph("Mã đơn hàng: " + order.getId()));
-            document.add(new Paragraph("Ngày đặt hàng: " + order.getOrderDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))));
+            document.add(new Paragraph("Ngày đặt hàng: "
+                    + order.getOrderDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))));
             document.add(new Paragraph("Khách hàng: " + order.getFullName()));
-            document.add(new Paragraph("Số điện thoại: " + order.getPhoneNumber()));
+            document.add(new Paragraph("Số điện thoại người mua: " + order.getBuyerPhoneNumber()));
+            document.add(new Paragraph("Số điện thoại người nhận: " + order.getPhoneNumber()));
             document.add(new Paragraph("Địa chỉ: " + order.getAddress()));
             if (order.getNote() != null && !order.getNote().isEmpty()) {
                 document.add(new Paragraph("Lời nhắn: " + order.getNote()));
@@ -106,7 +196,7 @@ public class OrderServiceImpl implements OrderService {
             document.add(new Paragraph("Phương thức thanh toán: " + order.getPaymentMethod()));
             document.add(new Paragraph("\n"));
 
-            float[] columnWidths = {50, 200, 80, 80, 100};
+            float[] columnWidths = { 50, 200, 80, 80, 100 };
             Table table = new Table(columnWidths);
             table.addCell("STT");
             table.addCell("Sản phẩm");
@@ -124,14 +214,22 @@ public class OrderServiceImpl implements OrderService {
             }
 
             document.add(table);
-            document.add(new Paragraph("Tổng cộng: $" + String.format("%.2f", order.getTotalAmount())).setBold().setTextAlignment(TextAlignment.RIGHT));
+            document.add(new Paragraph("Tổng cộng: $" + String.format("%.2f", order.getTotalAmount())).setBold()
+                    .setTextAlignment(TextAlignment.RIGHT));
 
             document.close();
         } catch (Exception e) {
             throw new RuntimeException("Lỗi khi tạo hóa đơn: " + e.getMessage());
         }
     }
+
     @Override
+    @Transactional(readOnly = true)
+    public List<Order> findOrdersByInvoiceCode(String invoiceCode) {
+        return orderRepository.findByInvoiceCode(invoiceCode);
+    }
+
+        @Override
     @Transactional(readOnly = true)
     public List<Order> getOrdersByStatus(OrderStatus status) {
         return orderRepository.findByStatus(status);
@@ -143,6 +241,4 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng với ID: " + id));
     }
-
-
 }

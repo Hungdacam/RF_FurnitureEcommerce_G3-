@@ -1,4 +1,4 @@
-import { axiosCart } from "../lib/axios";
+import { axiosCart, axiosCatalog } from "../lib/axios"; // Thêm axiosCatalog
 import { create } from 'zustand';
 
 const useCartStore = create((set) => ({
@@ -15,19 +15,26 @@ const useCartStore = create((set) => ({
 
     addToCart: async (userName, productId, productName, price, quantity, isAuthenticated = false) => {
         set({ isLoading: true, error: null });
-        if(!isAuthenticated) {
+        if (!isAuthenticated) {
             const localCart = useCartStore.getState().getLocalCart();
-            const existingItem = localCart.find(item => item.productId === productId);
-            if(existingItem) {
+            const existingItem = localCart.find((item) => item.productId === productId);
+            if (existingItem) {
                 existingItem.quantity += quantity;
-            }else {
-                localCart.push({productId, productName, price, quantity});
+            } else {
+                localCart.push({ productId, productName, price, quantity });
             }
             useCartStore.getState().saveLocalCart(localCart);
-            set({isLoading: false});
+            set({ isLoading: false });
             return localCart;
         }
         try {
+            // Kiểm tra tồn kho trước khi thêm
+            const productResponse = await axiosCatalog.get(`/products/${productId}`);
+            const stockQuantity = productResponse.data.quantity;
+            if (quantity > stockQuantity) {
+                throw new Error(`Số lượng yêu cầu (${quantity}) vượt quá tồn kho (${stockQuantity})!`);
+            }
+
             const token = localStorage.getItem('authToken');
             console.log('Token là:', token);
             const response = await axiosCart.post('/add', null, {
@@ -46,28 +53,36 @@ const useCartStore = create((set) => ({
         }
     },
 
-syncLocalCart: async (userName) => {
-    const localCart = useCartStore.getState().getLocalCart();
-    if(!localCart || localCart.length === 0) return;
-    set({isLoading: true, error: null});
-    try {
-        const token = localStorage.getItem('authToken');
-        for(const item of localCart) {
-            await axiosCart.post('/add', null, {
-                params: {
-                    userName,
+    syncLocalCart: async (userName) => {
+        const localCart = useCartStore.getState().getLocalCart();
+        if (!localCart || localCart.length === 0) return;
+        set({ isLoading: true, error: null });
+        try {
+            const token = localStorage.getItem('authToken');
+            for (const item of localCart) {
+                // Kiểm tra tồn kho
+                const productResponse = await axiosCatalog.get(`/products/${item.productId}`);
+                const stockQuantity = productResponse.data.quantity;
+                if (item.quantity > stockQuantity) {
+                    throw new Error(
+                        `Số lượng sản phẩm ${item.productName} (${item.quantity}) vượt quá tồn kho (${stockQuantity})!`
+                    );
+                }
+
+                await axiosCart.post('/add', null, {
+                    params: {
+                        userName,
                         productId: item.productId,
                         productName: item.productName,
                         price: item.price,
                         quantity: item.quantity
-                },
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
+                    },
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
             }
-            );
-        }
-      const response = await axiosCart.get('/get', {
+            const response = await axiosCart.get('/get', {
                 params: { userName },
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -82,7 +97,6 @@ syncLocalCart: async (userName) => {
             throw new Error(errorMessage);
         }
     },
-
 
     getCart: async (userName) => {
         set({ isLoading: true, error: null });
@@ -106,12 +120,66 @@ syncLocalCart: async (userName) => {
     updateCartItemQuantity: async (userName, productId, quantity) => {
         set({ isLoading: true, error: null });
         try {
+            // Kiểm tra tồn kho trước khi cập nhật
+            const productResponse = await axiosCatalog.get(`/products/${productId}`);
+            const stockQuantity = productResponse.data.quantity;
+            if (quantity > stockQuantity) {
+                throw new Error(`Số lượng yêu cầu (${quantity}) vượt quá tồn kho (${stockQuantity})!`);
+            }
+
             const token = localStorage.getItem('authToken');
             const response = await axiosCart.put('/update-quantity', null, {
                 params: { userName, productId, quantity },
                 headers: {
                     Authorization: `Bearer ${token}`
                 },
+            });
+            set({ cart: response.data, isLoading: false });
+            return response.data;
+        } catch (error) {
+            const errorMessage = error.response?.data || error.message;
+            set({ error: errorMessage, isLoading: false });
+            throw new Error(errorMessage);
+        }
+    },
+    
+    rebuyOrder: async (userName, items) => {
+        set({ isLoading: true, error: null });
+        try {
+            for (const item of items) {
+                const productId = item.productId;
+                const quantity = item.quantity;
+
+                // Kiểm tra tồn kho
+                const productResponse = await axiosCatalog.get(`/products/${productId}`);
+                const stockQuantity = productResponse.data.quantity;
+                if (quantity > stockQuantity) {
+                    throw new Error(
+                        `Số lượng sản phẩm ${item.productName} (${quantity}) vượt quá tồn kho (${stockQuantity})!`
+                    );
+                }
+
+                const token = localStorage.getItem('authToken');
+                await axiosCart.post('/add', null, {
+                    params: {
+                        userName,
+                        productId,
+                        productName: item.productName,
+                        price: item.price,
+                        quantity
+                    },
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+            }
+            const token = localStorage.getItem('authToken');
+
+            const response = await axiosCart.get('/get', {
+                params: { userName },
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             });
             set({ cart: response.data, isLoading: false });
             return response.data;

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useProductStore from '../stores/useProductStore';
 import useAuthStore from '../stores/useAuthStore';
 import useCartStore from '../stores/useCartStore';
+import { toast } from 'react-hot-toast';
 import background from '../assets/background.png';
 import seatingImg from '../assets/seating.png';
 import storageImg from '../assets/storage.png';
@@ -35,19 +36,23 @@ const Dashboard = () => {
     if (!authUser) {
       try {
         await addToCart(null, product.id, product.productName, product.price, 1, false);
-        alert('Sản phẩm đã được thêm vào giỏ hàng tạm. Vui lòng đăng nhập để lưu vào giỏ hàng chính thức!');
+        toast.success('Sản phẩm đã được thêm vào giỏ hàng tạm. Vui lòng đăng nhập để lưu vào giỏ hàng chính thức!');
         navigate('/login');
       } catch (error) {
-        alert('Lỗi khi thêm sản phẩm vào giỏ hàng tạm!');
+        toast.error(error.message || 'Lỗi khi thêm sản phẩm vào giỏ hàng tạm!');
         console.error(error);
       }
       return;
     }
     try {
+      if (product.quantity === 0) {
+        toast.error('Sản phẩm đã hết hàng!');
+        return;
+      }
       await addToCart(authUser.userName, product.id, product.productName, product.price, 1, true);
-      alert('Đã thêm sản phẩm vào giỏ hàng!');
+      toast.success('Đã thêm sản phẩm vào giỏ hàng!');
     } catch (error) {
-      alert('Lỗi khi thêm sản phẩm vào giỏ hàng: ' + error.message);
+      toast.error(error.message || 'Lỗi khi thêm sản phẩm vào giỏ hàng!');
       console.error(error);
     }
   };
@@ -228,22 +233,24 @@ const Dashboard = () => {
                   <img
                     src={product.imageUrl}
                     alt={product.productName}
-                    className="product-image"
-                    onError={(e) => (e.target.src = 'https://via.placeholder.com/150')}
+                    className="product-name"
+                    onError={(e) => (e.target.src = 'https://via.placeholder.com/300')}
                   />
                 </div>
                 <div className="product-details">
                   <h2 className="product-name">{product.productName}</h2>
                   <div className="product-info">
                     <p className="product-price">${product.price}</p>
+                    <p className="product-quantity">Số lượng: {product.quantity}</p>
                   </div>
                   {!isAdmin && (
                     <button
                       className="add-to-cart-button"
                       onClick={() => handleAddToCart(product)}
+                      disabled={product.quantity === 0}
                     >
                       <span className="cart-icon">🛒</span>
-                      <span>Thêm vào giỏ hàng</span>
+                      <span>{product.quantity === 0 ? 'Hết hàng' : 'Thêm vào giỏ hàng'}</span>
                     </button>
                   )}
                   <button

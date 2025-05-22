@@ -1,31 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useCartStore from '../stores/useCartStore';
 import useAuthStore from '../stores/useAuthStore';
+import { axiosCatalog } from '../lib/axios';
+import { toast } from 'react-hot-toast';
 import '../css/Cart.css';
 
 export default function Cart() {
     const { cart, getCart, updateCartItemQuantity, error, isLoading } = useCartStore();
     const { authUser } = useAuthStore();
     const navigate = useNavigate();
+    const location = useLocation();
     const [selectedItems, setSelectedItems] = useState({});
     const [localCartItems, setLocalCartItems] = useState([]);
+    const [stockWarnings, setStockWarnings] = useState({});
 
     useEffect(() => {
         if (!authUser) {
-            alert('Vui lòng đăng nhập để xem giỏ hàng!');
+            toast.error('Vui lòng đăng nhập để xem giỏ hàng!');
             navigate('/');
             return;
         }
 
         getCart(authUser.userName);
-
-        const intervalId = setInterval(() => {
-            getCart(authUser.userName);
-            console.log('Giỏ hàng được làm mới tự động');
-        }, 10000);
-
-        return () => clearInterval(intervalId);
     }, [authUser, navigate, getCart]);
 
     useEffect(() => {
@@ -33,53 +30,139 @@ export default function Cart() {
             const newLocalCartItems = cart.items.map((item) => ({ ...item }));
             setLocalCartItems(newLocalCartItems);
 
+            // Check and adjust stock quantities
+            const checkAndAdjustStock = async () => {
+                const updatedItems = [...newLocalCartItems];
+                const warnings = {};
+                let hasStockIssue = false;
+
+                for (const item of updatedItems) {
+                    try {
+                        const productResponse = await axiosCatalog.get(`/products/${item.productId}`);
+                        const latestStockQuantity = productResponse.data.quantity;
+
+                        if (item.quantity > latestStockQuantity) {
+                            hasStockIssue = true;
+                            warnings[item.productId] = `Tồn kho chỉ còn ${latestStockQuantity}, số lượng đã được điều chỉnh!`;
+                            updatedItems.forEach((i) => {
+                                if (i.productId === item.productId) {
+                                    i.quantity = latestStockQuantity;
+                                    i.stockQuantity = latestStockQuantity;
+                                }
+                            });
+                            // Update backend
+                            await updateCartItemQuantity(authUser.userName, item.productId, latestStockQuantity);
+                            toast.warn(`Sản phẩm ${item.productName}: ${warnings[item.productId]}`);
+                        } else {
+                            updatedItems.forEach((i) => {
+                                if (i.productId === item.productId) {
+                                    i.stockQuantity = latestStockQuantity;
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        console.error(`Error checking stock for product ${item.productId}:`, error);
+                    }
+                }
+
+                setLocalCartItems(updatedItems);
+                setStockWarnings(warnings);
+
+                if (hasStockIssue) {
+                    // Refresh cart from backend to ensure consistency
+                    await getCart(authUser.userName);
+                }
+            };
+
+            checkAndAdjustStock();
+
+            // Handle rebuy product selection
+            const rebuyProductIds = location.state?.rebuyProductIds || [];
             setSelectedItems((prevSelected) => {
-                const newSelectedItems = { ...prevSelected };
+                const newSelected = { ...prevSelected };
                 cart.items.forEach((item) => {
-                    if (!(item.productId in newSelectedItems)) {
-                        newSelectedItems[item.productId] = false;
+                    if (rebuyProductIds.length > 0 && rebuyProductIds.includes(item.productId) && item.available && !item.outOfStock) {
+                        newSelected[item.productId] = true;
                     }
                 });
-                Object.keys(newSelectedItems).forEach((productId) => {
+                Object.keys(newSelected).forEach((productId) => {
                     if (!cart.items.some((item) => item.productId === Number(productId))) {
-                        delete newSelectedItems[productId];
+                        delete newSelected[productId];
                     }
                 });
-                return newSelectedItems;
+                return newSelected;
             });
+
+            if (rebuyProductIds.length > 0) {
+                navigate(location.pathname, { replace: true, state: {} });
+            }
         }
-    }, [cart]);
+    }, [cart, location.state, navigate, authUser.userName, getCart, updateCartItemQuantity]);
 
     const handleQuantityChange = async (productId, newQuantity) => {
         if (newQuantity < 0) {
             return;
         }
 
-        if (newQuantity === 0) {
-            setLocalCartItems((prevItems) =>
-                prevItems.filter((item) => item.productId !== productId)
-            );
-            setSelectedItems((prev) => {
-                const newSelected = { ...prev };
-                delete newSelected[productId];
-                return newSelected;
-            });
-            alert('Sản phẩm đã được xóa khỏi giỏ hàng!');
-        } else {
-            setLocalCartItems((prevItems) =>
-                prevItems.map((item) =>
-                    item.productId === productId ? { ...item, quantity: newQuantity } : item
-                )
-            );
+        const item = localCartItems.find((item) => item.productId === productId);
+        if (!item) {
+            toast.error('Sản phẩm không tồn tại trong giỏ hàng!');
+            return;
         }
 
+        console.log(`handleQuantityChange: productId=${productId}, newQuantity=${newQuantity}, localStockQuantity=${item.stockQuantity}`);
+
         try {
-            await updateCartItemQuantity(authUser.userName, productId, newQuantity);
+            const productResponse = await axiosCatalog.get(`/products/${productId}`);
+            const latestStockQuantity = productResponse.data.quantity;
+            console.log(`Latest stock: productId=${productId}, stockQuantity=${latestStockQuantity}`);
+
+            if (newQuantity > latestStockQuantity) {
+                toast.error(`Không thể tăng số lượng! Tồn kho hiện tại chỉ còn ${latestStockQuantity} sản phẩm.`);
+                return;
+            }
+
+            if (newQuantity === 0) {
+                setLocalCartItems((prevItems) =>
+                    prevItems.filter((item) => item.productId !== productId)
+                );
+                setSelectedItems((prev) => {
+                    const newSelected = { ...prev };
+                    delete newSelected[productId];
+                    return newSelected;
+                });
+                toast.success('Sản phẩm đã được xóa khỏi giỏ hàng!');
+            } else {
+                setLocalCartItems((prevItems) =>
+                    prevItems.map((i) =>
+                        i.productId === productId
+                            ? { ...i, quantity: newQuantity, stockQuantity: latestStockQuantity }
+                            : i
+                    )
+                );
+            }
+
+            try {
+                await updateCartItemQuantity(authUser.userName, productId, newQuantity);
+                setStockWarnings((prev) => {
+                    const newWarnings = { ...prev };
+                    delete newWarnings[productId];
+                    return newWarnings;
+                });
+            } catch (error) {
+                toast.error(error.message);
+                setLocalCartItems(cart.items.map((item) => ({ ...item })));
+                console.error('Error updating cart:', error);
+            }
         } catch (error) {
-            alert(error.message);
-            setLocalCartItems(cart.items.map((item) => ({ ...item })));
-            console.error(error);
+            toast.error('Lỗi khi kiểm tra tồn kho. Vui lòng thử lại!');
+            console.error('Error fetching stock:', error);
         }
+    };
+
+    const handleAdjustToStock = async (productId, stockQuantity) => {
+        await handleQuantityChange(productId, stockQuantity);
+        toast.success(`Số lượng đã được điều chỉnh xuống ${stockQuantity} theo tồn kho!`);
     };
 
     const handleRemoveItem = async (productId) => {
@@ -94,30 +177,28 @@ export default function Cart() {
 
         try {
             await updateCartItemQuantity(authUser.userName, productId, 0);
-            alert('Sản phẩm đã được xóa khỏi giỏ hàng!');
+            toast.success('Sản phẩm đã được xóa khỏi giỏ hàng!');
         } catch (error) {
-            alert(`Lỗi khi xóa sản phẩm: ${error.message}`);
+            toast.error(`Lỗi khi xóa sản phẩm: ${error.message}`);
             setLocalCartItems(cart.items.map((item) => ({ ...item })));
-            console.error(error);
+            console.error('Error removing item:', error);
         }
     };
 
     const handleCheckboxChange = (productId) => {
         setSelectedItems((prev) => ({
             ...prev,
-            [productId]: !prev[productId],
+            [productId]: !prev[productId] || false,
         }));
     };
 
     const handleSelectAll = (e) => {
         const isChecked = e.target.checked;
-        setSelectedItems((prev) => {
-            const newSelected = { ...prev };
-            localCartItems.forEach((item) => {
-                newSelected[item.productId] = isChecked && item.available && !item.outOfStock;
-            });
-            return newSelected;
+        const newSelected = {};
+        localCartItems.forEach((item) => {
+            newSelected[item.productId] = isChecked && item.available && !item.outOfStock;
         });
+        setSelectedItems(newSelected);
     };
 
     if (isLoading) {
@@ -134,11 +215,21 @@ export default function Cart() {
     }
 
     if (!localCartItems.length) {
-        return <div className="empty-cart">Giỏ hàng của bạn đang trống</div>;
+        return (
+            <div className="empty-cart">
+                <button className="back-button" onClick={() => navigate('/dashboard')}>
+                    ⬅ Quay lại
+                </button>
+                Giỏ hàng của bạn đang trống
+            </div>
+        );
     }
 
     const hasUnavailableItems = localCartItems.some(
         (item) => selectedItems[item.productId] && (!item.available || item.outOfStock)
+    );
+    const hasStockIssues = localCartItems.some(
+        (item) => selectedItems[item.productId] && stockWarnings[item.productId]
     );
     const selectedTotal = localCartItems
         .filter((item) => selectedItems[item.productId])
@@ -148,10 +239,14 @@ export default function Cart() {
 
     console.log('Local cart items:', localCartItems);
     console.log('Selected items:', selectedItems);
+    console.log('Stock warnings:', JSON.stringify(stockWarnings, null, 2));
 
     return (
         <div className="cart-container">
             <h1 className="cart-title">Giỏ Hàng Của Bạn</h1>
+            <button className="back-button" onClick={() => navigate('/dashboard')}>
+                ⬅ Quay lại
+            </button>
             <div className="select-all-container">
                 <input
                     type="checkbox"
@@ -192,6 +287,17 @@ export default function Cart() {
                             {item.available && item.outOfStock && (
                                 <p className="unavailable-message">Sản phẩm đã hết hàng</p>
                             )}
+                            {stockWarnings[item.productId] && (
+                                <>
+                                    <p className="stock-warning">{stockWarnings[item.productId]}</p>
+                                    <button
+                                        className="adjust-button"
+                                        onClick={() => handleAdjustToStock(item.productId, item.stockQuantity)}
+                                    >
+                                        Điều chỉnh
+                                    </button>
+                                </>
+                            )}
                             <div className="quantity-control">
                                 <button
                                     onClick={() => handleQuantityChange(item.productId, item.quantity - 1)}
@@ -202,7 +308,16 @@ export default function Cart() {
                                 <span>{item.quantity}</span>
                                 <button
                                     onClick={() => handleQuantityChange(item.productId, item.quantity + 1)}
-                                    disabled={!item.available || item.outOfStock}
+                                    disabled={
+                                        !item.available ||
+                                        item.outOfStock ||
+                                        item.quantity >= item.stockQuantity
+                                    }
+                                    title={
+                                        item.quantity >= item.stockQuantity
+                                            ? `Đã đạt tối đa tồn kho (${item.stockQuantity} sản phẩm)`
+                                            : 'Tăng số lượng'
+                                    }
                                 >
                                     +
                                 </button>
@@ -225,14 +340,16 @@ export default function Cart() {
             <button
                 className="checkout-button"
                 onClick={() => navigate('/checkout', { state: { selectedItems } })}
-                disabled={hasUnavailableItems || !hasSelectedItems}
+                disabled={hasUnavailableItems || !hasSelectedItems || hasStockIssues}
             >
                 Thanh Toán
             </button>
-            {(hasUnavailableItems || !hasSelectedItems) && (
+            {(hasUnavailableItems || !hasSelectedItems || hasStockIssues) && (
                 <p className="checkout-warning">
                     {hasUnavailableItems
                         ? 'Vui lòng xóa các sản phẩm không tồn tại hoặc hết hàng trong số đã chọn.'
+                        : hasStockIssues
+                        ? 'Vui lòng điều chỉnh số lượng sản phẩm vượt quá tồn kho.'
                         : 'Vui lòng chọn ít nhất một sản phẩm để thanh toán.'}
                 </p>
             )}

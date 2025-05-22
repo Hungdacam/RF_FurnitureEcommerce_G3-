@@ -2,7 +2,7 @@
 .statistics-container {
   padding: 30px;
   max-width: 1300px;
-  margin: 0 auto;
+  margin: 100px auto;
 }
 
 .statistics-header {
@@ -562,5 +562,3 @@
   border-radius: 8px;
   margin-top: 20px;
 }
-
-

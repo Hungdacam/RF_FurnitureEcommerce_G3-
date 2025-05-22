@@ -25,15 +25,12 @@ export const axiosOrder = axios.create({
     'Content-Type': 'application/json',
   },
 });
-
-// Tạo instance axios cho Statistics Service
 export const axiosStats = axios.create({
   baseURL: 'http://localhost:8900/api/statistics',
   headers: {
     'Content-Type': 'application/json',
   },
 });
-
 // Thêm interceptor để tự động thêm token vào header
 axiosInstance.interceptors.request.use(
   (config) => {
@@ -45,18 +42,6 @@ axiosInstance.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
-axiosInstance.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    console.error('API Error:', error);
-    if (error.response && error.response.status === 404) {
-      // Xử lý lỗi 404
-      console.log('Endpoint không tồn tại');
-    }
-    return Promise.reject(error);
-  }
-);
-
 axiosCatalog.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
@@ -93,8 +78,6 @@ axiosOrder.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
-
-// Thêm interceptor để tự động thêm token vào header
 axiosStats.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
