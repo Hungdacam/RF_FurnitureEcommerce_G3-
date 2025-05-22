@@ -131,4 +131,18 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Lỗi khi tạo hóa đơn: " + e.getMessage());
         }
     }
+    @Override
+    @Transactional(readOnly = true)
+    public List<Order> getOrdersByStatus(OrderStatus status) {
+        return orderRepository.findByStatus(status);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Order getOrderById(Long id) {
+        return orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng với ID: " + id));
+    }
+
+
 }

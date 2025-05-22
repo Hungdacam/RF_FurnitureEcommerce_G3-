@@ -2,6 +2,7 @@ package com.rainbowforest.orderservice.entity.order_service.service;
 import java.util.List;
 
 import com.rainbowforest.orderservice.entity.order_service.entity.Order;
+import com.rainbowforest.orderservice.entity.order_service.entity.OrderStatus;
 
 public interface OrderService {
     Order createOrder(String userName, String fullName, String phoneNumber, String address, String note, String paymentMethod, double totalAmount, List<com.rainbowforest.orderservice.entity.order_service.entity.OrderItem> items);
@@ -9,4 +10,6 @@ public interface OrderService {
     Order updateOrderStatus(Long orderId, String status);
     Order cancelOrder(Long orderId);
     List<Order> getAllOrders();
+    List<Order> getOrdersByStatus(OrderStatus status);
+    Order getOrderById(Long id);
 }

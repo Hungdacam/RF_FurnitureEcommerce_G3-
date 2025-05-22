@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.rainbowforest.orderservice.entity.order_service.entity.OrderStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -98,6 +99,23 @@ public class OrderController {
             return new ResponseEntity<>("Lỗi khi hủy đơn hàng: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    @GetMapping("/delivered")
+    public ResponseEntity<List<OrderDto>> getDeliveredOrders() {
+        List<Order> orders = orderService.getOrdersByStatus(OrderStatus.DELIVERED);
+        List<OrderDto> orderDtos = orders.stream().map(this::convertToDto).collect(Collectors.toList());
+        return new ResponseEntity<>(orderDtos, HttpStatus.OK);
+    }
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getOrderById(@PathVariable Long id) {
+        try {
+            Order order = orderService.getOrderById(id);
+            OrderDto orderDto = convertToDto(order);
+            return new ResponseEntity<>(orderDto, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Lỗi khi lấy thông tin đơn hàng: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 
     private OrderDto convertToDto(Order order) {
         OrderDto orderDto = new OrderDto();
