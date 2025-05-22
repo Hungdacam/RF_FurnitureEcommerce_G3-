@@ -73,6 +73,17 @@
             "mainClass": "com.rainbowforest.orderservice.entity.order_service.OrderServiceApplication",
             "projectName": "order-service",
             "args": "",
+            "envFile": "${workspaceFolder}/.env",
+            "vmArgs": " -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=61319 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dspring.jmx.enabled=true -Djava.rmi.server.hostname=localhost -Dspring.application.admin.enabled=true -Dspring.boot.project.name=order-service"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-CartserviceApplication<cart-service>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.rainbowforest.cartservice.cartservice.CartserviceApplication",
+            "projectName": "cart-service",
+            "args": "",
             "envFile": "${workspaceFolder}/.env"
         }
     ]

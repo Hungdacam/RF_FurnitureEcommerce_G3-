@@ -7,7 +7,7 @@ const ProfileUser = () => {
         return <div>Vui lòng đăng nhập để xem thông tin người dùng.</div>;
     }
   return (
-    <div >
+    <div className='profile-container'>
 
     <h1>Thông tin người dùng</h1>
     <div className="user-info">

@@ -8,7 +8,7 @@ import '../css/DetailProduct.css';
 const DetailProduct = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const { products, fetchProductById } = useProductStore();
+  const { products, fetchProductById, updateProduct, isLoading } = useProductStore();
   const { addToCart, cart, getCart } = useCartStore();
   const { authUser } = useAuthStore();
   const [product, setProduct] = useState(null);
@@ -16,13 +16,22 @@ const DetailProduct = () => {
   const [quantity, setQuantity] = useState(1);
   const [showNotification, setShowNotification] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editProductData, setEditProductData] = useState({
+    product_name: "",
+    category: "",
+    description: "",
+    price: "",
+    quantity: "",
+  });
+  const [editErrors, setEditErrors] = useState({});
+  const [editImageFile, setEditImageFile] = useState(null);
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        await fetchProductById(productId);
-        const selectedProduct = products.find((p) => p.id === parseInt(productId));
-        setProduct(selectedProduct);
+        const fetchedProduct = await fetchProductById(productId);
+        setProduct(fetchedProduct); // Lấy trực tiếp dữ liệu trả về
       } catch (error) {
         console.error('Lỗi khi lấy chi tiết sản phẩm:', error);
       } finally {
@@ -42,7 +51,7 @@ const DetailProduct = () => {
 
     fetchProduct();
     fetchCart();
-  }, [productId, products, fetchProductById, authUser, getCart]);
+  }, [productId, fetchProductById, authUser, getCart]);
 
   const handleAddToCart = async () => {
     if (!authUser) {
@@ -89,7 +98,70 @@ const DetailProduct = () => {
   };
 
   const handleEditProduct = () => {
-    navigate('/product-management');
+    setEditProductData({
+      product_name: product.productName,
+      category: product.category,
+      description: product.description,
+      price: product.price,
+      quantity: product.quantity,
+    });
+    setShowEditForm(true);
+    setEditErrors({});
+    setEditImageFile(null);
+  };
+
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditProductData({ ...editProductData, [name]: value });
+    if (editErrors[name]) {
+      setEditErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const handleEditImageChange = (e) => {
+    setEditImageFile(e.target.files[0]);
+  };
+
+  const validateEditForm = () => {
+    const newErrors = {};
+    if (!editProductData.product_name.trim())
+      newErrors.product_name = "Tên sản phẩm không được để trống";
+    if (!editProductData.category.trim())
+      newErrors.category = "Danh mục không được để trống";
+    if (!editProductData.description.trim())
+      newErrors.description = "Mô tả không được để trống";
+    if (!editProductData.price || Number(editProductData.price) <= 0)
+      newErrors.price = "Giá phải lớn hơn 0";
+    if (
+      editProductData.quantity === "" ||
+      isNaN(editProductData.quantity) ||
+      !Number.isInteger(Number(editProductData.quantity)) ||
+      Number(editProductData.quantity) < 0
+    ) {
+      newErrors.quantity = "Số lượng phải là số nguyên dương lớn hơn hoặc bằng 0";
+    }
+    setEditErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleUpdateProduct = async (e) => {
+    e.preventDefault();
+    if (!validateEditForm()) return;
+    try {
+      await updateProduct(product.id, editProductData, editImageFile);
+      setShowEditForm(false);
+      // Lấy lại dữ liệu sản phẩm mới nhất từ fetchProductById
+      const updatedProduct = await fetchProductById(productId);
+      setProduct(updatedProduct); // Cập nhật lại state product ngay lập tức
+    } catch (error) {
+      setEditErrors({ submit: "Lỗi khi cập nhật sản phẩm: " + error.message });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setShowEditForm(false);
+    setEditErrors({});
+    setEditImageFile(null);
   };
 
   const increaseQuantity = () => {
@@ -193,7 +265,7 @@ const DetailProduct = () => {
                 </button>
               </>
             )}
-            {isAdmin && (
+            {isAdmin && !showEditForm && (
               <button
                 className="edit-product-btn"
                 onClick={handleEditProduct}
@@ -205,6 +277,109 @@ const DetailProduct = () => {
           </div>
           {errorMessage && (
             <p className="error-message">{errorMessage}</p>
+          )}
+
+          {/* FORM CHỈNH SỬA SẢN PHẨM */}
+          {isAdmin && showEditForm && (
+            <form className="edit-product-form" onSubmit={handleUpdateProduct} style={{ marginTop: 20 }}>
+              <div className="form-group">
+                <label htmlFor="edit_product_name">Tên sản phẩm:</label>
+                <input
+                  type="text"
+                  id="edit_product_name"
+                  name="product_name"
+                  value={editProductData.product_name}
+                  onChange={handleEditInputChange}
+                  required
+                />
+                {editErrors.product_name && (
+                  <span className="error-message">{editErrors.product_name}</span>
+                )}
+              </div>
+              <div className="form-group">
+                <label htmlFor="edit_category">Danh mục:</label>
+                <input
+                  type="text"
+                  id="edit_category"
+                  name="category"
+                  value={editProductData.category}
+                  onChange={handleEditInputChange}
+                  required
+                />
+                {editErrors.category && (
+                  <span className="error-message">{editErrors.category}</span>
+                )}
+              </div>
+              <div className="form-group">
+                <label htmlFor="edit_description">Mô tả:</label>
+                <textarea
+                  id="edit_description"
+                  name="description"
+                  value={editProductData.description}
+                  onChange={handleEditInputChange}
+                  required
+                ></textarea>
+                {editErrors.description && (
+                  <span className="error-message">{editErrors.description}</span>
+                )}
+              </div>
+              <div className="form-group">
+                <label htmlFor="edit_price">Giá:</label>
+                <input
+                  type="number"
+                  id="edit_price"
+                  name="price"
+                  value={editProductData.price}
+                  onChange={handleEditInputChange}
+                  required
+                />
+                {editErrors.price && (
+                  <span className="error-message">{editErrors.price}</span>
+                )}
+              </div>
+              <div className="form-group">
+                <label htmlFor="edit_quantity">Số lượng:</label>
+                <input
+                  type="number"
+                  id="edit_quantity"
+                  name="quantity"
+                  value={editProductData.quantity}
+                  onChange={handleEditInputChange}
+                  required
+                />
+                {editErrors.quantity && (
+                  <span className="error-message">{editErrors.quantity}</span>
+                )}
+              </div>
+              <div className="form-group">
+                <label htmlFor="edit_image">Hình ảnh (tùy chọn):</label>
+                <input
+                  type="file"
+                  id="edit_image"
+                  name="image"
+                  onChange={handleEditImageChange}
+                />
+              </div>
+              {editErrors.submit && (
+                <span className="error-message">{editErrors.submit}</span>
+              )}
+              <div className="edit-buttons">
+                <button
+                  type="submit"
+                  className="update-button"
+                  disabled={isLoading}
+                >
+                  <span className="button-icon">✔</span> Lưu Cập Nhật
+                </button>
+                <button
+                  type="button"
+                  className="cancel-button"
+                  onClick={handleCancelEdit}
+                >
+                  <span className="button-icon">✖</span> Hủy
+                </button>
+              </div>
+            </form>
           )}
         </div>
       </div>

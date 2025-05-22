@@ -28,9 +28,11 @@ const useProductStore = create((set) => ({
     try {
       const res = await axiosCatalog.get(`products/${id}`);
       set({ product: res.data });
+      return res.data; // <-- Thêm dòng này để trả về dữ liệu sản phẩm
     } catch (error) {
       toast.error('Failed to fetch product details');
       console.error(error);
+      return null; // <-- Trả về null khi lỗi
     } finally {
       set({ isLoading: false });
     }
