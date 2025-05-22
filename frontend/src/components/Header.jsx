@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import useAuthStore from "../stores/useAuthStore";
 import useProductStore from "../stores/useProductStore";
+import { toast } from "react-hot-toast";
 
 import "../css/Header.css";
 
@@ -62,6 +63,11 @@ const Header = () => {
   };
 
   const handleGoToCart = () => {
+    if (!authUser) {
+      toast.error("Vui lòng đăng nhập để sử dụng giỏ hàng!");
+      navigate("/login");
+      return;
+    }
     navigate("/cart");
   };
 
