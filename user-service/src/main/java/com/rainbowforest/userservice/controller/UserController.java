@@ -59,60 +59,73 @@ public class UserController {
     	if(user != null) {
     		return new ResponseEntity<User>(
     				user,
-    				headerGenerator.
-    				getHeadersForSuccessGetMethod(),
+    				headerGenerator.getHeadersForSuccessGetMethod(),
     				HttpStatus.OK);
     	}
         return new ResponseEntity<User>(
         		headerGenerator.getHeadersForError(),
         		HttpStatus.NOT_FOUND);
     }
-@GetMapping(value = "/users/by-username")
-public ResponseEntity<UserDto> getUserByUserName(@RequestParam("username") String userName) {
-    User user = userService.getUserByName(userName);
-    if (user != null) {
-        UserDto userDto = new UserDto();
-        userDto.setId(user.getId());
-        userDto.setUserName(user.getUserName());
-        userDto.setRoleName(user.getRole().getRoleName());
-        
 
-        if (user.getUserDetails() != null) {
-            UserDetailsDto detailsDto = new UserDetailsDto();
-            detailsDto.setFirstName(user.getUserDetails().getFirstName());
-            detailsDto.setLastName(user.getUserDetails().getLastName());
-            detailsDto.setEmail(user.getUserDetails().getEmail());
-            detailsDto.setPhoneNumber(user.getUserDetails().getPhoneNumber());
-            detailsDto.setStreet(user.getUserDetails().getStreet());
-            detailsDto.setStreetNumber(user.getUserDetails().getStreetNumber());
-            detailsDto.setZipCode(user.getUserDetails().getZipCode());
-            detailsDto.setLocality(user.getUserDetails().getLocality());
-            detailsDto.setCountry(user.getUserDetails().getCountry());
-            userDto.setUserDetails(detailsDto);
+    @GetMapping(value = "/users/by-username")
+    public ResponseEntity<UserDto> getUserByUserName(@RequestParam("username") String userName) {
+        User user = userService.getUserByName(userName);
+        if (user != null) {
+            UserDto userDto = new UserDto();
+            userDto.setId(user.getId());
+            userDto.setUserName(user.getUserName());
+            userDto.setRoleName(user.getRole().getRoleName());
+            
+            if (user.getUserDetails() != null) {
+                UserDetailsDto detailsDto = new UserDetailsDto();
+                detailsDto.setFirstName(user.getUserDetails().getFirstName());
+                detailsDto.setLastName(user.getUserDetails().getLastName());
+                detailsDto.setEmail(user.getUserDetails().getEmail());
+                detailsDto.setPhoneNumber(user.getUserDetails().getPhoneNumber());
+                detailsDto.setStreet(user.getUserDetails().getStreet());
+                detailsDto.setStreetNumber(user.getUserDetails().getStreetNumber());
+                detailsDto.setZipCode(user.getUserDetails().getZipCode());
+                detailsDto.setLocality(user.getUserDetails().getLocality());
+                detailsDto.setCountry(user.getUserDetails().getCountry());
+                userDto.setUserDetails(detailsDto);
+            }
+
+            return new ResponseEntity<>(
+                userDto,
+                headerGenerator.getHeadersForSuccessGetMethod(),
+                HttpStatus.OK
+            );
         }
-
         return new ResponseEntity<>(
-            userDto,
-            headerGenerator.getHeadersForSuccessGetMethod(),
-            HttpStatus.OK
+            headerGenerator.getHeadersForError(),
+            HttpStatus.NOT_FOUND
         );
     }
-    return new ResponseEntity<>(
-        headerGenerator.getHeadersForError(),
-        HttpStatus.NOT_FOUND
-    );
-}
-     @PutMapping("/users/{id}")
+
+    @PutMapping("/users/{id}")
     public ResponseEntity<UserDto> updateUserDetails(
             @PathVariable("id") Long id,
             @RequestBody UserDetailsDto updatedDetails) {
         try {
-            // Thêm log để debug
             System.out.println("Nhận request cập nhật user ID: " + id);
             System.out.println("Dữ liệu nhận được: " + updatedDetails);
-            if (updatedDetails == null) {
-                System.out.println("updatedDetails là null");
-                return ResponseEntity.badRequest().build();
+            
+            // Kiểm tra các trường bắt buộc
+            if (updatedDetails.getFirstName() == null || updatedDetails.getFirstName().isEmpty()) {
+                System.out.println("Lỗi: firstName là null hoặc rỗng");
+                return ResponseEntity.badRequest().body(new UserDto());
+            }
+            if (updatedDetails.getLastName() == null || updatedDetails.getLastName().isEmpty()) {
+                System.out.println("Lỗi: lastName là null hoặc rỗng");
+                return ResponseEntity.badRequest().body(new UserDto());
+            }
+            if (updatedDetails.getEmail() == null || updatedDetails.getEmail().isEmpty()) {
+                System.out.println("Lỗi: email là null hoặc rỗng");
+                return ResponseEntity.badRequest().body(new UserDto());
+            }
+            if (updatedDetails.getPhoneNumber() == null || updatedDetails.getPhoneNumber().isEmpty()) {
+                System.out.println("Lỗi: phoneNumber là null hoặc rỗng");
+                return ResponseEntity.badRequest().body(new UserDto());
             }
 
             User user = userService.getUserById(id);
@@ -129,16 +142,14 @@ public ResponseEntity<UserDto> getUserByUserName(@RequestParam("username") Strin
             details.setFirstName(updatedDetails.getFirstName());
             details.setLastName(updatedDetails.getLastName());
             details.setEmail(updatedDetails.getEmail());
-            details.setStreet(updatedDetails.getStreet());
             details.setPhoneNumber(updatedDetails.getPhoneNumber());
+            details.setStreet(updatedDetails.getStreet());
             details.setStreetNumber(updatedDetails.getStreetNumber());
             details.setZipCode(updatedDetails.getZipCode());
             details.setLocality(updatedDetails.getLocality());
             details.setCountry(updatedDetails.getCountry());
 
-            // Thêm log trước khi lưu
             System.out.println("Đang lưu thông tin user: " + user.getId());
-            // Sử dụng phương thức updateUserDetails thay vì saveUser
             userService.updateUserDetails(user);
             System.out.println("Đã lưu thành công user ID: " + user.getId());
 
@@ -186,14 +197,12 @@ public ResponseEntity<UserDto> getUserByUserName(@RequestParam("username") Strin
                 return ResponseEntity.notFound().build();
             }
 
-            // Kiểm tra mật khẩu cũ
             if (!passwordEncoder.matches(oldPassword, user.getUserPassword())) {
                 return ResponseEntity.status(400).body("Mật khẩu hiện tại không đúng");
             }
 
-            // Cập nhật mật khẩu mới
             user.setUserPassword(passwordEncoder.encode(newPassword));
-            userRepository.save(user); // Lưu trực tiếp hoặc thông qua service
+            userRepository.save(user);
 
             return ResponseEntity.ok("Đã cập nhật mật khẩu thành công");
         } catch (Exception e) {
@@ -202,6 +211,4 @@ public ResponseEntity<UserDto> getUserByUserName(@RequestParam("username") Strin
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Đã xảy ra lỗi khi cập nhật mật khẩu");
         }
     }
-
-	
 }

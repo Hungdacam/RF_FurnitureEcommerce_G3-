@@ -84,6 +84,16 @@
             "projectName": "cart-service",
             "args": "",
             "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-StatisticsServiceApplication<statistics-service>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.rainbowforest.statisticsservice.StatisticsServiceApplication",
+            "projectName": "statistics-service",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }

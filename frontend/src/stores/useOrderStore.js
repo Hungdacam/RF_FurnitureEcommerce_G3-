@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { toast } from 'react-hot-toast';
-import { axiosOrder, axiosCart } from '../lib/axios';
-import useCartStore from './useCartStore'; // Thêm import
+import { axiosOrder } from '../lib/axios';
+import useCartStore from './useCartStore';
 
 const useOrderStore = create((set) => ({
   isCreatingOrder: false,
@@ -135,7 +135,6 @@ const useOrderStore = create((set) => ({
           order.id === orderId ? { ...order, status: 'CANCELLED' } : order
         )
       }));
-      // Làm mới giỏ hàng sau khi hủy
       const userName = response.data.userName;
       if (userName) {
         await useCartStore.getState().getCart(userName);
@@ -151,6 +150,30 @@ const useOrderStore = create((set) => ({
         config: error.config
       });
       toast.error(typeof errorMessage === 'string' ? errorMessage : 'Lỗi khi hủy đơn hàng');
+      throw new Error(errorMessage);
+    }
+  },
+  updateOrder: async (orderId, contactData) => {
+    try {
+      console.log(`Updating contact info for order ${orderId}:`, contactData);
+      const response = await axiosOrder.put(`/update-contact/${orderId}`, contactData);
+      console.log('Order contact info updated successfully:', response.data);
+      set((state) => ({
+        orders: state.orders.map((order) =>
+          order.id === orderId ? { ...order, ...contactData } : order
+        )
+      }));
+      toast.success('Cập nhật thông tin liên hệ thành công!');
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || error.response?.data || 'Lỗi khi cập nhật thông tin liên hệ';
+      console.error('Update order contact info error:', {
+        message: errorMessage,
+        status: error.response?.status,
+        data: error.response?.data,
+        config: error.config
+      });
+      toast.error(typeof errorMessage === 'string' ? errorMessage : 'Lỗi khi cập nhật thông tin liên hệ');
       throw new Error(errorMessage);
     }
   },

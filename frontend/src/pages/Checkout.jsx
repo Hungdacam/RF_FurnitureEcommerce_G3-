@@ -8,13 +8,14 @@ import '../css/Checkout.css';
 
 export default function Checkout() {
     const { cart, getCart } = useCartStore();
-    const { authUser } = useAuthStore();
+    const { authUser, updateUserDetails, findOneUser } = useAuthStore();
     const { createOrder, isCreatingOrder } = useOrderStore();
     const navigate = useNavigate();
     const location = useLocation();
     const [userDetails, setUserDetails] = useState({
         firstName: '',
         lastName: '',
+        email: '',
         phoneNumber: '',
         street: '',
         streetNumber: '',
@@ -22,7 +23,7 @@ export default function Checkout() {
         locality: '',
         country: ''
     });
-    const [buyerPhoneNumber, setBuyerPhoneNumber] = useState(''); // Số điện thoại người mua
+    const [buyerPhoneNumber, setBuyerPhoneNumber] = useState('');
     const [note, setNote] = useState('');
     const [paymentMethod] = useState('COD');
     const [selectedItems, setSelectedItems] = useState({});
@@ -42,26 +43,50 @@ export default function Checkout() {
             return;
         }
 
-        setUserDetails(authUser.userDetails || {
-            firstName: '',
-            lastName: '',
-            phoneNumber: '',
-            street: '',
-            streetNumber: '',
-            zipCode: '',
-            locality: '',
-            country: ''
-        });
+        // Lấy thông tin người dùng nếu userDetails chưa đầy đủ
+        const fetchUserDetails = async () => {
+            try {
+                const userData = await findOneUser(authUser.userName);
+                setUserDetails({
+                    firstName: userData.userDetails?.firstName || '',
+                    lastName: userData.userDetails?.lastName || '',
+                    email: userData.userDetails?.email || '',
+                    phoneNumber: userData.userDetails?.phoneNumber || '',
+                    street: userData.userDetails?.street || '',
+                    streetNumber: userData.userDetails?.streetNumber || '',
+                    zipCode: userData.userDetails?.zipCode || '',
+                    locality: userData.userDetails?.locality || '',
+                    country: userData.userDetails?.country || ''
+                });
+                setBuyerPhoneNumber(userData.userDetails?.phoneNumber || '');
+            } catch (error) {
+                toast.error('Lỗi khi tải thông tin người dùng: ' + error.message);
+            }
+        };
 
-        // Lưu số điện thoại người mua từ authUser
-        setBuyerPhoneNumber(authUser.userDetails?.phoneNumber || '');
+        if (!authUser.userDetails || !authUser.userDetails.firstName || !authUser.userDetails.email) {
+            fetchUserDetails();
+        } else {
+            setUserDetails({
+                firstName: authUser.userDetails?.firstName || '',
+                lastName: authUser.userDetails?.lastName || '',
+                email: authUser.userDetails?.email || '',
+                phoneNumber: authUser.userDetails?.phoneNumber || '',
+                street: authUser.userDetails?.street || '',
+                streetNumber: authUser.userDetails?.streetNumber || '',
+                zipCode: authUser.userDetails?.zipCode || '',
+                locality: authUser.userDetails?.locality || '',
+                country: authUser.userDetails?.country || ''
+            });
+            setBuyerPhoneNumber(authUser.userDetails?.phoneNumber || '');
+        }
 
         getCart(authUser.userName);
 
         if (location.state?.selectedItems) {
             setSelectedItems(location.state.selectedItems);
         }
-    }, [authUser, navigate, getCart, location.state]);
+    }, [authUser, navigate, getCart, location.state, findOneUser]);
 
     const validateField = (name, value) => {
         let error = '';
@@ -81,6 +106,12 @@ export default function Checkout() {
             if (!value) {
                 error = 'Đường không được để trống!';
             }
+        } else if (name === 'firstName' || name === 'lastName' || name === 'email') {
+            if (!value) {
+                error = `${name === 'firstName' ? 'Họ' : name === 'lastName' ? 'Tên' : 'Email'} không được để trống!`;
+            } else if (name === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                error = 'Email không hợp lệ!';
+            }
         }
         return error;
     };
@@ -89,7 +120,7 @@ export default function Checkout() {
         const newErrors = {};
         let formIsValid = true;
 
-        ['phoneNumber', 'street'].forEach((field) => {
+        ['firstName', 'lastName', 'email', 'phoneNumber', 'street'].forEach((field) => {
             const error = validateField(field, userDetails[field]);
             if (error) {
                 newErrors[field] = error;
@@ -131,11 +162,17 @@ export default function Checkout() {
         }));
     };
 
-    const handleSaveUserDetails = () => {
-        if (isFormValid) {
-            toast.success('Thông tin người nhận đã được lưu để đặt hàng!');
-        } else {
+    const handleSaveUserDetails = async () => {
+        if (!isFormValid) {
             toast.error('Vui lòng sửa các lỗi trước khi lưu!');
+            return;
+        }
+
+        try {
+            await updateUserDetails(authUser.id, userDetails);
+            toast.success('Thông tin người nhận đã được lưu!');
+        } catch (error) {
+            toast.error('Lỗi khi lưu thông tin: ' + error.message);
         }
     };
 
@@ -145,7 +182,6 @@ export default function Checkout() {
             return;
         }
 
-        // Làm mới giỏ hàng trước khi đặt hàng
         try {
             await getCart(authUser.userName);
         } catch (error) {
@@ -163,10 +199,10 @@ export default function Checkout() {
 
         const orderData = {
             userName: authUser.userName,
-            email: authUser.userDetails?.email || '', // Thêm email từ authUser
+            email: userDetails.email,
             fullName: `${userDetails.firstName} ${userDetails.lastName}`,
-            phoneNumber: userDetails.phoneNumber, // Số điện thoại người nhận
-            buyerPhoneNumber: buyerPhoneNumber, // Số điện thoại người mua
+            phoneNumber: userDetails.phoneNumber,
+            buyerPhoneNumber: buyerPhoneNumber,
             address: `${userDetails.street} ${userDetails.streetNumber}, ${userDetails.locality}, ${userDetails.zipCode}, ${userDetails.country}`,
             note,
             paymentMethod,
@@ -182,7 +218,6 @@ export default function Checkout() {
 
         try {
             const response = await createOrder(orderData, navigate);
-            // Hiển thị mã hóa đơn sau khi đặt hàng thành công
             toast.success(`Đặt hàng thành công! Mã hóa đơn của bạn: ${response.invoiceCode}`, {
                 duration: 5000,
                 action: {
@@ -190,7 +225,6 @@ export default function Checkout() {
                     onClick: () => navigate('/orders')
                 }
             });
-            // Làm mới giỏ hàng sau khi đặt hàng thành công
             await getCart(authUser.userName);
         } catch (error) {
             await getCart(authUser.userName);
@@ -224,19 +258,47 @@ export default function Checkout() {
     return (
         <div className="checkout-container">
             <button className="back-button" onClick={() => navigate('/cart')}>
-        ⬅ Quay lại
-      </button>
+                ⬅ Quay lại
+            </button>
             <h1 className="checkout-title">Thanh Toán</h1>
             <div className="checkout-content">
                 <div className="user-details">
                     <h2>Thông Tin Người Nhận</h2>
                     <div className="form-group">
                         <label>Họ *</label>
-                        <input type="text" name="firstName" value={userDetails.firstName} disabled />
+                        <input
+                            type="text"
+                            name="firstName"
+                            value={userDetails.firstName}
+                            onChange={handleInputChange}
+                            required
+                            disabled
+                        />
+                        {errors.firstName && <p className="error-text">{errors.firstName}</p>}
                     </div>
                     <div className="form-group">
                         <label>Tên *</label>
-                        <input type="text" name="lastName" value={userDetails.lastName} disabled />
+                        <input
+                            type="text"
+                            name="lastName"
+                            value={userDetails.lastName}
+                            onChange={handleInputChange}
+                            required
+                            disabled
+                            
+                        />
+                        {errors.lastName && <p className="error-text">{errors.lastName}</p>}
+                    </div>
+                    <div className="form-group">
+                        <label>Email *</label>
+                        <input
+                            type="email"
+                            name="email"
+                            value={userDetails.email}
+                            onChange={handleInputChange}
+                            required
+                        />
+                        {errors.email && <p className="error-text">{errors.email}</p>}
                     </div>
                     <div className="form-group">
                         <label>Số điện thoại người mua</label>
@@ -244,31 +306,66 @@ export default function Checkout() {
                     </div>
                     <div className="form-group">
                         <label>Số điện thoại người nhận *</label>
-                        <input type="text" name="phoneNumber" value={userDetails.phoneNumber} onChange={handleInputChange} required placeholder="Ví dụ: 0912345678 hoặc +84912345678" />
+                        <input
+                            type="text"
+                            name="phoneNumber"
+                            value={userDetails.phoneNumber}
+                            onChange={handleInputChange}
+                            required
+                            placeholder="Ví dụ: 0912345678 hoặc +84912345678"
+                        />
                         {errors.phoneNumber && <p className="error-text">{errors.phoneNumber}</p>}
                     </div>
                     <div className="form-group">
                         <label>Đường *</label>
-                        <input type="text" name="street" value={userDetails.street} onChange={handleInputChange} required />
+                        <input
+                            type="text"
+                            name="street"
+                            value={userDetails.street}
+                            onChange={handleInputChange}
+                            required
+                        />
                         {errors.street && <p className="error-text">{errors.street}</p>}
                     </div>
                     <div className="form-group">
                         <label>Số nhà</label>
-                        <input type="text" name="streetNumber" value={userDetails.streetNumber} onChange={handleInputChange} />
+                        <input
+                            type="text"
+                            name="streetNumber"
+                            value={userDetails.streetNumber}
+                            onChange={handleInputChange}
+                        />
                     </div>
                     <div className="form-group">
                         <label>Mã bưu điện</label>
-                        <input type="text" name="zipCode" value={userDetails.zipCode} onChange={handleInputChange} />
+                        <input
+                            type="text"
+                            name="zipCode"
+                            value={userDetails.zipCode}
+                            onChange={handleInputChange}
+                        />
                     </div>
                     <div className="form-group">
                         <label>Thành phố</label>
-                        <input type="text" name="locality" value={userDetails.locality} onChange={handleInputChange} />
+                        <input
+                            type="text"
+                            name="locality"
+                            value={userDetails.locality}
+                            onChange={handleInputChange}
+                        />
                     </div>
                     <div className="form-group">
                         <label>Quốc gia</label>
-                        <input type="text" name="country" value={userDetails.country} onChange={handleInputChange} />
+                        <input
+                            type="text"
+                            name="country"
+                            value={userDetails.country}
+                            onChange={handleInputChange}
+                        />
                     </div>
-                    <button className="save-button" onClick={handleSaveUserDetails}>Lưu thông tin</button>
+                    <button className="save-button" onClick={handleSaveUserDetails}>
+                        Lưu thông tin
+                    </button>
                 </div>
                 <div className="order-details">
                     <h2>Chi Tiết Đơn Hàng</h2>
@@ -278,7 +375,11 @@ export default function Checkout() {
                         <div className="order-items">
                             {selectedCartItems.map((item, index) => (
                                 <div key={index} className="order-item">
-                                    <img src={item.imageUrl || '/images/placeholder.jpg'} alt={item.productName} className="order-item-image" />
+                                    <img
+                                        src={item.imageUrl || '/images/placeholder.jpg'}
+                                        alt={item.productName}
+                                        className="order-item-image"
+                                    />
                                     <div className="order-item-details">
                                         <h3>{item.productName}</h3>
                                         <p>Giá: ${item.price}</p>
@@ -291,7 +392,11 @@ export default function Checkout() {
                     )}
                     <div className="order-note">
                         <label>Lời nhắn cho shop</label>
-                        <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Nhập lời nhắn (nếu có)" />
+                        <textarea
+                            value={note}
+                            onChange={(e) => setNote(e.target.value)}
+                            placeholder="Nhập lời nhắn (nếu có)"
+                        />
                     </div>
                     <div className="payment-method">
                         <h3>Phương thức thanh toán</h3>

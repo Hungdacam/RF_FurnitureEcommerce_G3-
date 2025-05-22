@@ -10,11 +10,32 @@
     margin-bottom: 20px;
 }
 
+.refresh-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
 .last-refreshed {
-    text-align: center;
     font-size: 1rem;
     color: #555;
-    margin-bottom: 10px;
+}
+
+.refresh-button {
+    background-color: #17a2b8;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.2s;
+}
+
+.refresh-button:hover {
+    background-color: #138496;
 }
 
 .search-bar {
@@ -24,7 +45,8 @@
 
 .search-input {
     padding: 10px;
-    width: 300px;
+    width: 100%;
+    max-width: 600px;
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 1rem;
@@ -222,6 +244,9 @@
 .modal-actions {
     text-align: right;
     margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
 }
 
 .modal-close-button {
@@ -236,6 +261,80 @@
 
 .modal-close-button:hover {
     background-color: #c82333;
+}
+
+.modal-edit-button {
+    background-color: #ffc107;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.modal-edit-button:hover {
+    background-color: #e0a800;
+}
+
+.modal-save-button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.modal-save-button:hover {
+    background-color: #218838;
+}
+
+.modal-cancel-button {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.modal-cancel-button:hover {
+    background-color: #5a6268;
+}
+
+.edit-field {
+    margin: 10px 0;
+}
+
+.edit-input {
+    padding: 8px;
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.edit-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 0.85rem;
+    margin-top: 5px;
+    display: block;
+}
+
+.edit-disabled-message {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin: 10px 0;
+    text-align: center;
 }
 
 /* Font hỗ trợ tiếng Việt */
@@ -268,4 +367,12 @@
     .search-input {
         width: 100%;
     }
-}
+    .refresh-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .modal-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+}   

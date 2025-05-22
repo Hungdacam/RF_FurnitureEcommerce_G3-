@@ -42,11 +42,15 @@ public class JwtFilter extends OncePerRequestFilter {
             @NonNull FilterChain chain) throws ServletException, IOException {
 
         final String requestURI = request.getRequestURI();
+        logger.debug("Processing request: {} with context path: {}",
+                requestURI, request.getContextPath());
         final String queryString = request.getQueryString();
         logger.debug("Processing request: {} with query: {}", requestURI, queryString);
 
         final String authorizationHeader = request.getHeader("Authorization");
-
+        logger.debug("Received Authorization header: {}", authorizationHeader);
+        final String cookieHeader = request.getHeader("Cookie");
+        logger.debug("Received Cookie header: {}", cookieHeader);
         String username = null;
         String jwt = null;
 
@@ -59,7 +63,6 @@ public class JwtFilter extends OncePerRequestFilter {
                 logger.error("JWT token validation failed: {}", e.getMessage());
             }
         } else {
-            // Kiểm tra token từ cookie
             if (request.getCookies() != null) {
                 Optional<Cookie> tokenCookie = Arrays.stream(request.getCookies())
                         .filter(cookie -> "token".equals(cookie.getName()))
@@ -72,7 +75,11 @@ public class JwtFilter extends OncePerRequestFilter {
                     } catch (Exception e) {
                         logger.error("JWT cookie token validation failed: {}", e.getMessage());
                     }
+                } else {
+                    logger.debug("No token cookie found");
                 }
+            } else {
+                logger.debug("No cookies received");
             }
         }
 

@@ -29,7 +29,13 @@ const Header = () => {
     searchProducts(keyword);
     navigate('/dashboard');
   };
-
+  const handleStatistics = () => {
+    if (authUser?.roles?.includes('ROLE_ADMIN')) {
+      navigate('/statistics');
+    } else {
+      alert('Bạn không có quyền truy cập vào trang này!');
+    }
+  };
   const handleLogout = async () => {
     await logout(navigate);
   };
@@ -165,6 +171,12 @@ const Header = () => {
                         >
                           Quản lý đơn hàng
                         </button>
+                          <button className="dropdown-link" onClick={handleStatistics}>
+                            <svg className="dropdown-icon" viewBox="0 0 24 24">
+                              <path d="M3 17h2v-7H3v7zm4 0h2V7H7v10zm4 0h2v-4h-2v4zm4 0h2V4h-2v13zm4 0h2v-9h-2v9z" />
+                            </svg>
+                            Thống kê
+                          </button>
                       </>
                     )}
                   </div>

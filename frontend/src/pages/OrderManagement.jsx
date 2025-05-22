@@ -7,7 +7,7 @@ import '../css/OrderManagement.css';
 
 export default function OrderManagement() {
     const { authUser } = useAuthStore();
-    const { orders, isLoadingOrders, getAllOrders, updateOrderStatus } = useOrderStore();
+    const { orders, isLoadingOrders, getAllOrders, updateOrderStatus, updateOrder } = useOrderStore();
     const navigate = useNavigate();
     const [selectedStatus, setSelectedStatus] = useState('ALL');
     const [selectedOrder, setSelectedOrder] = useState(null);
@@ -16,6 +16,9 @@ export default function OrderManagement() {
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [lastRefreshed, setLastRefreshed] = useState(null);
     const [searchInvoiceCode, setSearchInvoiceCode] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState({ phoneNumber: '', address: '' });
+    const [editErrors, setEditErrors] = useState({});
 
     useEffect(() => {
         if (!authUser || !authUser.roles.includes('ROLE_ADMIN')) {
@@ -26,19 +29,21 @@ export default function OrderManagement() {
 
         getAllOrders().then(() => {
             setLastRefreshed(new Date());
+        }).catch(error => {
+            console.error('Lỗi khi tải đơn hàng:', error);
+            toast.error('Lỗi khi tải đơn hàng!');
         });
-
-        const intervalId = setInterval(() => {
-            getAllOrders().then(() => {
-                setLastRefreshed(new Date());
-            }).catch(error => {
-                console.error('Lỗi khi làm mới đơn hàng:', error);
-                toast.error('Lỗi khi làm mới đơn hàng!');
-            });
-        }, 10000);
-
-        return () => clearInterval(intervalId);
     }, [authUser, navigate, getAllOrders]);
+
+    const handleRefresh = () => {
+        getAllOrders().then(() => {
+            setLastRefreshed(new Date());
+            toast.success('Danh sách đơn hàng đã được làm mới!');
+        }).catch(error => {
+            console.error('Lỗi khi làm mới đơn hàng:', error);
+            toast.error('Lỗi khi làm mới đơn hàng!');
+        });
+    };
 
     const filteredOrders = useMemo(() => {
         let filtered = selectedStatus === 'ALL'
@@ -56,12 +61,15 @@ export default function OrderManagement() {
 
     const openModal = (order) => {
         setSelectedOrder(order);
+        setEditForm({ phoneNumber: order.phoneNumber || '', address: order.address || '' });
         setIsModalOpen(true);
     };
 
     const closeModal = () => {
         setIsModalOpen(false);
         setSelectedOrder(null);
+        setIsEditing(false);
+        setEditErrors({});
     };
 
     const openProductModal = (order) => {
@@ -76,6 +84,58 @@ export default function OrderManagement() {
 
     const handleSearchInvoiceCode = (e) => {
         setSearchInvoiceCode(e.target.value);
+    };
+
+    const handleEditChange = (e) => {
+        const { name, value } = e.target;
+        setEditForm(prev => ({ ...prev, [name]: value }));
+        setEditErrors(prev => ({ ...prev, [name]: '' }));
+    };
+
+    const validateEditForm = () => {
+        const errors = {};
+        if (!editForm.phoneNumber) {
+            errors.phoneNumber = 'Số điện thoại không được để trống';
+        } else if (!/^\d{10}$/.test(editForm.phoneNumber)) {
+            errors.phoneNumber = 'Số điện thoại phải gồm 10 chữ số';
+        }
+        if (!editForm.address.trim()) {
+            errors.address = 'Địa chỉ không được để trống';
+        } else if (editForm.address.length > 500) {
+            errors.address = 'Địa chỉ không được vượt quá 500 ký tự';
+        }
+        setEditErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    const handleSaveEdit = async () => {
+        if (!validateEditForm()) return;
+
+        try {
+            await updateOrder(selectedOrder.id, {
+                phoneNumber: editForm.phoneNumber,
+                address: editForm.address,
+            });
+            setSelectedOrder(prev => ({
+                ...prev,
+                phoneNumber: editForm.phoneNumber,
+                address: editForm.address,
+            }));
+            setIsEditing(false);
+            toast.success('Cập nhật thông tin liên hệ thành công!');
+        } catch (error) {
+            console.error('Lỗi khi cập nhật thông tin đơn hàng:', error);
+            toast.error(error.message || 'Lỗi khi cập nhật thông tin liên hệ');
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setIsEditing(false);
+        setEditForm({
+            phoneNumber: selectedOrder.phoneNumber || '',
+            address: selectedOrder.address || '',
+        });
+        setEditErrors({});
     };
 
     if (isLoadingOrders) {
@@ -93,9 +153,14 @@ export default function OrderManagement() {
     return (
         <div className="order-management-container">
             <h1 className="order-management-title">Quản Lý Đơn Hàng</h1>
-            <p className="last-refreshed">
-                Lần làm mới cuối: {lastRefreshed ? lastRefreshed.toLocaleTimeString() : 'Đang tải...'}
-            </p>
+            <div className="refresh-controls">
+                <p className="last-refreshed">
+                    Lần làm mới cuối: {lastRefreshed ? lastRefreshed.toLocaleTimeString() : 'Đang tải...'}
+                </p>
+                <button className="refresh-button" onClick={handleRefresh}>
+                    Tải lại
+                </button>
+            </div>
             <div className="search-bar">
                 <input
                     type="text"
@@ -175,10 +240,67 @@ export default function OrderManagement() {
                             <p><strong>Mã hóa đơn:</strong> {selectedOrder.invoiceCode || 'N/A'}</p>
                             <p><strong>Tên:</strong> {selectedOrder.fullName}</p>
                             <p><strong>Số điện thoại người mua:</strong> {selectedOrder.buyerPhoneNumber}</p>
-                            <p><strong>Số điện thoại người nhận:</strong> {selectedOrder.phoneNumber}</p>
-                            <p><strong>Địa chỉ:</strong> {selectedOrder.address}</p>
+                            {isEditing ? (
+                                <>
+                                    <div className="edit-field">
+                                        <strong>Số điện thoại người nhận:</strong>
+                                        <input
+                                            type="tel"
+                                            name="phoneNumber"
+                                            value={editForm.phoneNumber}
+                                            onChange={handleEditChange}
+                                            className="edit-input"
+                                        />
+                                        {editErrors.phoneNumber && (
+                                            <span className="error-message">{editErrors.phoneNumber}</span>
+                                        )}
+                                    </div>
+                                    <div className="edit-field">
+                                        <strong>Địa chỉ:</strong>
+                                        <input
+                                            type="text"
+                                            name="address"
+                                            value={editForm.address}
+                                            onChange={handleEditChange}
+                                            className="edit-input"
+                                        />
+                                        {editErrors.address && (
+                                            <span className="error-message">{editErrors.address}</span>
+                                        )}
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <p><strong>Số điện thoại người nhận:</strong> {selectedOrder.phoneNumber}</p>
+                                    <p><strong>Địa chỉ:</strong> {selectedOrder.address}</p>
+                                </>
+                            )}
                         </div>
+                        {!isEditing && selectedOrder.status !== 'PENDING' && (
+                            <p className="edit-disabled-message">
+                                Chỉ có thể chỉnh sửa thông tin liên hệ cho đơn hàng đang chờ xác nhận.
+                            </p>
+                        )}
                         <div className="modal-actions">
+                            {isEditing ? (
+                                <>
+                                    <button className="modal-save-button" onClick={handleSaveEdit}>
+                                        Lưu
+                                    </button>
+                                    <button className="modal-cancel-button" onClick={handleCancelEdit}>
+                                        Hủy
+                                    </button>
+                                </>
+                            ) : (
+                                selectedOrder.status === 'PENDING' && (
+                                    <button
+                                        className="modal-edit-button"
+                                        onClick={() => setIsEditing(true)}
+                                    >
+                                        Chỉnh sửa
+                                    </button>
+                                )
+                            )}
                             <button className="modal-close-button" onClick={closeModal}>
                                 Đóng
                             </button>

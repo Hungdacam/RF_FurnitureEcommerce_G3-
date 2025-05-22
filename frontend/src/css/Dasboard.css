@@ -19,14 +19,12 @@ a {
 
 /* Header Styles */
 
-
 /* Page Container */
 .page-container {
   min-height: 100vh;
   background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
   padding: 30px 0 60px;
   background-attachment: fixed;
-  /* background-color: '#B0C9C5'; */
 }
 
 /* Loading Styles */
@@ -88,7 +86,7 @@ a {
 }
 
 .title::before {
-  content: 'â˜…';
+  content: '★';
   position: absolute;
   left: 50%;
   top: -5px;
@@ -98,7 +96,7 @@ a {
 }
 
 .title::after {
-  content: 'â˜…';
+  content: '★';
   position: absolute;
   right: 50%;
   top: -5px;
@@ -135,27 +133,27 @@ a {
 
 /* Product Image */
 .product-image-container {
-  height: 200px;
+  height: 300px;
+  width: 100%;
   overflow: hidden;
   position: relative;
   background-color: rgb(211, 228, 228);
-  border-radius: 50px;
-  
+  border-radius: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .product-image {
-  width: 50%;
+  width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   transition: transform 0.5s ease;
-  margin-top: 30px;
-  border-radius: 50px;
-  
+  border-radius: 16px;
 }
 
 .product-card:hover .product-image {
   transform: scale(1.05);
-  border-radius: 50px;
 }
 
 /* Product Details */
@@ -234,10 +232,15 @@ a {
   gap: 8px;
 }
 
-.add-to-cart-button:hover {
+.add-to-cart-button:hover:not(:disabled) {
   background: rgb(45,88,83);
   transform: translateY(-2px);
   box-shadow: 0 5px 10px rgba(0, 123, 255, 0.3);
+}
+
+.add-to-cart-button:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
 }
 
 .add-to-info-button {
@@ -302,6 +305,10 @@ a {
     font-size: 32px;
     margin-top: 20px;
   }
+
+  .product-image-container {
+    height: 250px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -320,7 +327,7 @@ a {
   }
   
   .product-image-container {
-    height: 180px;
+    height: 200px;
   }
 }
 
@@ -373,8 +380,8 @@ a {
   top: 0;
   left: 0;
   width: 100%;
-  height: 400px; /* hoáº·c 100vh náº¿u muá»‘n full screen */
-  background-image: url('/background.png'); /* Thay báº±ng URL áº£nh */
+  height: 400px;
+  background-image: url('/background.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

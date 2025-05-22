@@ -47,7 +47,7 @@ public class OrderServiceImpl implements OrderService {
         order.setUserName(userName);
         order.setFullName(fullName);
         order.setPhoneNumber(phoneNumber);
-        order.setBuyerPhoneNumber(buyerPhoneNumber); // Thêm số điện thoại người mua
+        order.setBuyerPhoneNumber(buyerPhoneNumber);
         order.setAddress(address);
         order.setNote(note);
         order.setPaymentMethod(paymentMethod);
@@ -69,7 +69,7 @@ public class OrderServiceImpl implements OrderService {
         LocalDateTime end = today.plusDays(1).atStartOfDay();
 
         long count = orderRepository.countOrdersInDay(start, end);
-        String sequence = String.format("%03d", count + 1); 
+        String sequence = String.format("%03d", count + 1);
         return "INV-" + datePart + "-" + sequence;
     }
 
@@ -95,6 +95,25 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
+    public Order updateOrderContactInfo(Long orderId, String phoneNumber, String address) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng!"));
+        if (!phoneNumber.matches("\\d{10}")) {
+            throw new RuntimeException("Số điện thoại phải gồm 10 chữ số!");
+        }
+        if (address == null || address.trim().isEmpty()) {
+            throw new RuntimeException("Địa chỉ không được để trống!");
+        }
+        if (address.length() > 500) {
+            throw new RuntimeException("Địa chỉ không được vượt quá 500 ký tự!");
+        }
+        order.setPhoneNumber(phoneNumber);
+        order.setAddress(address);
+        return orderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
     public Order cancelOrder(Long orderId, String jwtToken) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng!"));
@@ -102,13 +121,11 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Chỉ có thể hủy đơn hàng ở trạng thái chờ xác nhận!");
         }
 
-        // Hoàn lại số lượng sản phẩm trong kho
         for (OrderItem item : order.getItems()) {
             Long productId = item.getProductId();
             int quantityToRestore = item.getQuantity();
 
             try {
-                // Lấy thông tin sản phẩm hiện tại
                 ProductDTO product = restTemplate.getForObject(
                         API_GATEWAY_URL + "/products/" + productId,
                         ProductDTO.class);
@@ -116,7 +133,6 @@ public class OrderServiceImpl implements OrderService {
                     throw new RuntimeException("Sản phẩm " + productId + " không tồn tại!");
                 }
 
-                // Cập nhật số lượng (tăng lại)
                 MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
                 map.add("product_name", product.getProductName());
                 map.add("category", product.getCategory());
@@ -140,7 +156,6 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
-        // Cập nhật trạng thái đơn hàng
         order.setStatus(OrderStatus.CANCELLED);
         return orderRepository.save(order);
     }
@@ -212,5 +227,18 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(readOnly = true)
     public List<Order> findOrdersByInvoiceCode(String invoiceCode) {
         return orderRepository.findByInvoiceCode(invoiceCode);
+    }
+
+        @Override
+    @Transactional(readOnly = true)
+    public List<Order> getOrdersByStatus(OrderStatus status) {
+        return orderRepository.findByStatus(status);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Order getOrderById(Long id) {
+        return orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng với ID: " + id));
     }
 }

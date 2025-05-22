@@ -31,6 +31,7 @@ import com.rainbowforest.orderservice.entity.order_service.dto.OrderItemDto;
 import com.rainbowforest.orderservice.entity.order_service.dto.ProductDTO;
 import com.rainbowforest.orderservice.entity.order_service.entity.Order;
 import com.rainbowforest.orderservice.entity.order_service.entity.OrderItem;
+import com.rainbowforest.orderservice.entity.order_service.entity.OrderStatus;
 import com.rainbowforest.orderservice.entity.order_service.service.OrderService;
 import com.rainbowforest.orderservice.entity.order_service.service.EmailService;
 
@@ -67,7 +68,6 @@ public class OrderController {
             double totalAmount = Double.parseDouble(orderData.get("totalAmount").toString());
             List<Map<String, Object>> itemsData = (List<Map<String, Object>>) orderData.get("items");
 
-          
             for (Map<String, Object> item : itemsData) {
                 Long productId = Long.valueOf(item.get("productId").toString());
                 int requestedQuantity = Integer.parseInt(item.get("quantity").toString());
@@ -96,7 +96,6 @@ public class OrderController {
                 }
             }
 
-           
             List<OrderItem> items = itemsData.stream().map(item -> {
                 OrderItem orderItem = new OrderItem();
                 orderItem.setProductId(Long.valueOf(item.get("productId").toString()));
@@ -107,11 +106,9 @@ public class OrderController {
                 return orderItem;
             }).toList();
 
-       
             Order order = orderService.createOrder(userName, fullName, phoneNumber, buyerPhoneNumber, address, note,
                     paymentMethod, totalAmount, items);
 
-           
             String jwtToken = getJwtToken();
             for (Map<String, Object> item : itemsData) {
                 Long productId = Long.valueOf(item.get("productId").toString());
@@ -177,7 +174,6 @@ public class OrderController {
 
             OrderDto orderDto = convertToDto(order);
 
-            // Gửi email xác nhận
             if (recipientEmail != null && !recipientEmail.trim().isEmpty()) {
                 try {
                     emailService.sendOrderConfirmationEmail(recipientEmail, orderDto);
@@ -196,6 +192,22 @@ public class OrderController {
             return new ResponseEntity<>(
                     Map.of("error", "Lỗi khi tạo đơn hàng: " + e.getMessage()),
                     HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PutMapping("/update-contact/{orderId}")
+    public ResponseEntity<?> updateOrderContactInfo(@PathVariable Long orderId,
+            @RequestBody Map<String, String> contactData) {
+        try {
+            String phoneNumber = contactData.get("phoneNumber");
+            String address = contactData.get("address");
+            Order order = orderService.updateOrderContactInfo(orderId, phoneNumber, address);
+            OrderDto orderDto = convertToDto(order);
+            return new ResponseEntity<>(orderDto, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(
+                    Map.of("error", "Lỗi khi cập nhật thông tin liên hệ: " + e.getMessage()),
+                    HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -243,8 +255,7 @@ public class OrderController {
             Order order = orderService.cancelOrder(orderId, jwtToken);
             OrderDto orderDto = convertToDto(order);
 
-            
-            String recipientEmail = null; 
+            String recipientEmail = null;
             if (recipientEmail != null && !recipientEmail.trim().isEmpty()) {
                 try {
                     emailService.sendOrderCancellationEmail(recipientEmail, orderDto);
@@ -263,6 +274,24 @@ public class OrderController {
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+     @GetMapping("/delivered")
+    public ResponseEntity<List<OrderDto>> getDeliveredOrders() {
+        List<Order> orders = orderService.getOrdersByStatus(OrderStatus.DELIVERED);
+        List<OrderDto> orderDtos = orders.stream().map(this::convertToDto).collect(Collectors.toList());
+        return new ResponseEntity<>(orderDtos, HttpStatus.OK);
+    }
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getOrderById(@PathVariable Long id) {
+        try {
+            Order order = orderService.getOrderById(id);
+            OrderDto orderDto = convertToDto(order);
+            return new ResponseEntity<>(orderDto, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Lỗi khi lấy thông tin đơn hàng: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 
     private OrderDto convertToDto(Order order) {
         OrderDto orderDto = new OrderDto();

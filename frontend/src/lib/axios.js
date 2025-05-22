@@ -25,7 +25,12 @@ export const axiosOrder = axios.create({
     'Content-Type': 'application/json',
   },
 });
-
+export const axiosStats = axios.create({
+  baseURL: 'http://localhost:8900/api/statistics',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 // Thêm interceptor để tự động thêm token vào header
 axiosInstance.interceptors.request.use(
   (config) => {
@@ -64,6 +69,16 @@ axiosCart.interceptors.request.use(
 );
 
 axiosOrder.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+axiosStats.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
     if (token) {

@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.rainbowforest.orderservice.entity.order_service.entity.Order;
+import com.rainbowforest.orderservice.entity.order_service.entity.OrderStatus;
 
 import feign.Param;
 
@@ -27,6 +28,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query(value = "SELECT COUNT(*) FROM orders WHERE order_date >= :start AND order_date < :end", nativeQuery = true)
     long countOrdersInDay(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-  
     List<Order> findByInvoiceCode(String invoiceCode);
+
+    @EntityGraph(attributePaths = { "items" })
+    List<Order> findByStatus(OrderStatus status);
 }
