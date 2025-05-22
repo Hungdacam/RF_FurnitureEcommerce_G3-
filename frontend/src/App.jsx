@@ -20,6 +20,8 @@ import Header from "./components/Header";
 import ProtectedRoute from "./components/ProtectedRoute";
 import useAuthStore from "./stores/useAuthStore";
 import Statistics from "./pages/Statistics";
+import UserManagement from './pages/UserManagement';
+import UserDetail from './pages/UserDetail';
 const App = () => {
   const { checkAuth, isCheckingAuth } = useAuthStore();
 
@@ -74,6 +76,8 @@ const App = () => {
                 </ProtectedRoute>
               }
             />
+             <Route path="/user-management" element={<UserManagement />} />
+             <Route path="/user-detail/:userId" element={<UserDetail />} />
           </Routes>
         </main>
         <Toaster position="top-center" />

@@ -26,45 +26,58 @@ public class UserController {
 
     @Autowired
     private UserService userService;
-    
+
     @Autowired
     private HeaderGenerator headerGenerator;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    
     UserController(PasswordEncoder passwordEncoder, UserRepository userRepository) {
         this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
     }
-    
-    @GetMapping (value = "/users")
-    public ResponseEntity<List<User>> getAllUsers(){
-        List<User> users =  userService.getAllUsers();
-        if(!users.isEmpty()) {
-        	return new ResponseEntity<List<User>>(
-        		users,
-        		headerGenerator.getHeadersForSuccessGetMethod(),
-        		HttpStatus.OK);
+
+    @GetMapping(value = "/users")
+    public ResponseEntity<List<User>> getAllUsers() {
+        List<User> users = userService.getAllUsers();
+        if (!users.isEmpty()) {
+            return new ResponseEntity<List<User>>(
+                    users,
+                    headerGenerator.getHeadersForSuccessGetMethod(),
+                    HttpStatus.OK);
         }
         return new ResponseEntity<List<User>>(
-        		headerGenerator.getHeadersForError(),
-        		HttpStatus.NOT_FOUND);
+                headerGenerator.getHeadersForError(),
+                HttpStatus.NOT_FOUND);
     }
 
-	@GetMapping(value = "/users", params = "name")
-    public ResponseEntity<User> getUserByName(@RequestParam("name") String userName){
-    	User user = userService.getUserByName(userName);
-    	if(user != null) {
-    		return new ResponseEntity<User>(
-    				user,
-    				headerGenerator.getHeadersForSuccessGetMethod(),
-    				HttpStatus.OK);
-    	}
+    @GetMapping(value = "/users/{id}")
+    public ResponseEntity<User> getUserById(@PathVariable("id") Long id) {
+        User user = userService.getUserById(id);
+        if (user != null) {
+            return new ResponseEntity<User>(
+                    user,
+                    headerGenerator.getHeadersForSuccessGetMethod(),
+                    HttpStatus.OK);
+        }
         return new ResponseEntity<User>(
-        		headerGenerator.getHeadersForError(),
-        		HttpStatus.NOT_FOUND);
+                headerGenerator.getHeadersForError(),
+                HttpStatus.NOT_FOUND);
+    }
+
+    @GetMapping(value = "/users", params = "name")
+    public ResponseEntity<User> getUserByName(@RequestParam("name") String userName) {
+        User user = userService.getUserByName(userName);
+        if (user != null) {
+            return new ResponseEntity<User>(
+                    user,
+                    headerGenerator.getHeadersForSuccessGetMethod(),
+                    HttpStatus.OK);
+        }
+        return new ResponseEntity<User>(
+                headerGenerator.getHeadersForError(),
+                HttpStatus.NOT_FOUND);
     }
 
     @GetMapping(value = "/users/by-username")
@@ -75,7 +88,7 @@ public class UserController {
             userDto.setId(user.getId());
             userDto.setUserName(user.getUserName());
             userDto.setRoleName(user.getRole().getRoleName());
-            
+
             if (user.getUserDetails() != null) {
                 UserDetailsDto detailsDto = new UserDetailsDto();
                 detailsDto.setFirstName(user.getUserDetails().getFirstName());
@@ -91,15 +104,13 @@ public class UserController {
             }
 
             return new ResponseEntity<>(
-                userDto,
-                headerGenerator.getHeadersForSuccessGetMethod(),
-                HttpStatus.OK
-            );
+                    userDto,
+                    headerGenerator.getHeadersForSuccessGetMethod(),
+                    HttpStatus.OK);
         }
         return new ResponseEntity<>(
-            headerGenerator.getHeadersForError(),
-            HttpStatus.NOT_FOUND
-        );
+                headerGenerator.getHeadersForError(),
+                HttpStatus.NOT_FOUND);
     }
 
     @PutMapping("/users/{id}")
@@ -109,7 +120,7 @@ public class UserController {
         try {
             System.out.println("Nhận request cập nhật user ID: " + id);
             System.out.println("Dữ liệu nhận được: " + updatedDetails);
-            
+
             // Kiểm tra các trường bắt buộc
             if (updatedDetails.getFirstName() == null || updatedDetails.getFirstName().isEmpty()) {
                 System.out.println("Lỗi: firstName là null hoặc rỗng");
@@ -184,10 +195,10 @@ public class UserController {
             @RequestBody Map<String, String> passwordData) {
         try {
             System.out.println("Nhận request cập nhật mật khẩu cho user ID: " + id);
-            
+
             String oldPassword = passwordData.get("oldPassword");
             String newPassword = passwordData.get("newPassword");
-            
+
             if (oldPassword == null || newPassword == null) {
                 return ResponseEntity.badRequest().body("Thiếu thông tin mật khẩu");
             }

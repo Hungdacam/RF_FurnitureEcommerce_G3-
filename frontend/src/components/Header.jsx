@@ -60,10 +60,14 @@ const Header = () => {
     navigate('/orderManagement');
   };
 
+
   const handleGoToCart = () => {
     navigate('/cart');
   };
 
+  const handleUserManagement = () => {
+    navigate('/user-management');
+  };
   return (
     <header className="main-header">
       <div className="header-container">
@@ -177,6 +181,13 @@ const Header = () => {
                             </svg>
                             Thống kê
                           </button>
+                            <button className="dropdown-link" onClick={handleUserManagement}>
+                            <svg className="dropdown-icon" viewBox="0 0 24 24">
+                              <path d="M3 17h2v-7H3v7zm4 0h2V7H7v10zm4 0h2v-4h-2v4zm4 0h2V4h-2v13zm4 0h2v-9h-2v9z" />
+                            </svg>
+                            Quản lí người dùng
+                          </button>
+                          
                       </>
                     )}
                   </div>
