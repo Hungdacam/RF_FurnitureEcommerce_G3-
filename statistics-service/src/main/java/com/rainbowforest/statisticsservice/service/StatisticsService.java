@@ -9,7 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,47 +43,200 @@ public class StatisticsService {
     }
 
     // Thống kê sản phẩm
-    public List<ProductStatsDto> getTopSellingProducts(int limit) {
-        log.info("Lấy top {} sản phẩm bán chạy nhất", limit);
-        return productStatsRepository.findTop10ByOrderByTotalQuantitySoldDesc(PageRequest.of(0, limit))
-                .stream()
-                .map(this::convertToProductDto)
+    public List<ProductStatsDto> getTopSellingProducts(int limit, LocalDate startDate, LocalDate endDate) {
+        log.info("Lấy top {} sản phẩm bán chạy nhất từ {} đến {}", limit, startDate, endDate);
+
+        // Lấy tất cả đơn hàng đã giao thành công trong khoảng thời gian
+        List<OrderDto> orders = getOrdersInDateRange(startDate, endDate);
+
+        // Tạo map để lưu trữ thống kê sản phẩm
+        Map<Long, ProductStatsDto> productStatsMap = new HashMap<>();
+
+        // Tính toán thống kê từ đơn hàng
+        for (OrderDto order : orders) {
+            for (OrderItemDto item : order.getItems()) {
+                Long productId = item.getProductId();
+                ProductStatsDto stats = productStatsMap.computeIfAbsent(productId, k -> {
+                    ProductStatsDto dto = new ProductStatsDto();
+                    dto.setProductId(productId);
+                    dto.setProductName(item.getProductName());
+                    dto.setImageUrl(item.getImageUrl());
+                    dto.setTotalQuantitySold(0);
+                    dto.setTotalRevenue(0.0);
+                    return dto;
+                });
+
+                stats.setTotalQuantitySold(stats.getTotalQuantitySold() + item.getQuantity());
+                stats.setTotalRevenue(stats.getTotalRevenue() + (item.getPrice() * item.getQuantity()));
+            }
+        }
+
+        // Chuyển map thành list và sắp xếp theo số lượng bán giảm dần
+        return productStatsMap.values().stream()
+                .sorted(Comparator.comparing(ProductStatsDto::getTotalQuantitySold).reversed())
+                .limit(limit)
                 .collect(Collectors.toList());
     }
 
-    public List<ProductStatsDto> getTopRevenueProducts(int limit) {
-        log.info("Lấy top {} sản phẩm có doanh thu cao nhất", limit);
-        return productStatsRepository.findTop10ByOrderByTotalRevenueDesc(PageRequest.of(0, limit))
-                .stream()
-                .map(this::convertToProductDto)
+    public List<ProductStatsDto> getTopRevenueProducts(int limit, LocalDate startDate, LocalDate endDate) {
+        log.info("Lấy top {} sản phẩm có doanh thu cao nhất từ {} đến {}", limit, startDate, endDate);
+
+        // Lấy tất cả đơn hàng đã giao thành công trong khoảng thời gian
+        List<OrderDto> orders = getOrdersInDateRange(startDate, endDate);
+
+        // Tạo map để lưu trữ thống kê sản phẩm
+        Map<Long, ProductStatsDto> productStatsMap = new HashMap<>();
+
+        // Tính toán thống kê từ đơn hàng
+        for (OrderDto order : orders) {
+            for (OrderItemDto item : order.getItems()) {
+                Long productId = item.getProductId();
+                ProductStatsDto stats = productStatsMap.computeIfAbsent(productId, k -> {
+                    ProductStatsDto dto = new ProductStatsDto();
+                    dto.setProductId(productId);
+                    dto.setProductName(item.getProductName());
+                    dto.setImageUrl(item.getImageUrl());
+                    dto.setTotalQuantitySold(0);
+                    dto.setTotalRevenue(0.0);
+                    return dto;
+                });
+
+                stats.setTotalQuantitySold(stats.getTotalQuantitySold() + item.getQuantity());
+                stats.setTotalRevenue(stats.getTotalRevenue() + (item.getPrice() * item.getQuantity()));
+            }
+        }
+
+        // Chuyển map thành list và sắp xếp theo doanh thu giảm dần
+        return productStatsMap.values().stream()
+                .sorted(Comparator.comparing(ProductStatsDto::getTotalRevenue).reversed())
+                .limit(limit)
                 .collect(Collectors.toList());
     }
 
     // Thống kê khách hàng
-    public List<CustomerStatsDto> getTopSpendingCustomers(int limit) {
-        log.info("Lấy top {} khách hàng chi tiêu nhiều nhất", limit);
-        return customerStatsRepository.findTop10ByOrderByTotalSpentDesc(PageRequest.of(0, limit))
-                .stream()
-                .map(this::convertToCustomerDto)
+    public List<CustomerStatsDto> getTopSpendingCustomers(int limit, LocalDate startDate, LocalDate endDate) {
+        log.info("Lấy top {} khách hàng chi tiêu nhiều nhất từ {} đến {}", limit, startDate, endDate);
+
+        // Lấy tất cả đơn hàng đã giao thành công trong khoảng thời gian
+        List<OrderDto> orders = getOrdersInDateRange(startDate, endDate);
+
+        // Tạo map để lưu trữ thống kê khách hàng
+        Map<String, CustomerStatsDto> customerStatsMap = new HashMap<>();
+
+        // Nhóm đơn hàng theo người dùng
+        Map<String, List<OrderDto>> ordersByUser = orders.stream()
+                .collect(Collectors.groupingBy(OrderDto::getUserName));
+
+        ordersByUser.forEach((userName, userOrders) -> {
+            int orderCount = userOrders.size();
+            double totalSpent = userOrders.stream().mapToDouble(OrderDto::getTotalAmount).sum();
+            double averageOrderValue = orderCount > 0 ? totalSpent / orderCount : 0;
+            String fullName = userOrders.get(0).getFullName();
+
+            CustomerStatsDto stats = new CustomerStatsDto();
+            stats.setUserName(userName);
+            stats.setFullName(fullName);
+            stats.setOrderCount(orderCount);
+            stats.setTotalSpent(totalSpent);
+            stats.setAverageOrderValue(averageOrderValue);
+
+            customerStatsMap.put(userName, stats);
+        });
+
+        // Chuyển map thành list và sắp xếp theo tổng chi tiêu giảm dần
+        return customerStatsMap.values().stream()
+                .sorted(Comparator.comparing(CustomerStatsDto::getTotalSpent).reversed())
+                .limit(limit)
                 .collect(Collectors.toList());
     }
 
-    public List<CustomerStatsDto> getTopFrequentCustomers(int limit) {
-        log.info("Lấy top {} khách hàng mua hàng thường xuyên nhất", limit);
-        return customerStatsRepository.findTop10ByOrderByOrderCountDesc(PageRequest.of(0, limit))
-                .stream()
-                .map(this::convertToCustomerDto)
+    public List<CustomerStatsDto> getTopFrequentCustomers(int limit, LocalDate startDate, LocalDate endDate) {
+        log.info("Lấy top {} khách hàng mua hàng thường xuyên nhất từ {} đến {}", limit, startDate, endDate);
+
+        // Lấy tất cả đơn hàng đã giao thành công trong khoảng thời gian
+        List<OrderDto> orders = getOrdersInDateRange(startDate, endDate);
+
+        // Tạo map để lưu trữ thống kê khách hàng
+        Map<String, CustomerStatsDto> customerStatsMap = new HashMap<>();
+
+        // Nhóm đơn hàng theo người dùng
+        Map<String, List<OrderDto>> ordersByUser = orders.stream()
+                .collect(Collectors.groupingBy(OrderDto::getUserName));
+
+        ordersByUser.forEach((userName, userOrders) -> {
+            int orderCount = userOrders.size();
+            double totalSpent = userOrders.stream().mapToDouble(OrderDto::getTotalAmount).sum();
+            double averageOrderValue = orderCount > 0 ? totalSpent / orderCount : 0;
+            String fullName = userOrders.get(0).getFullName();
+
+            CustomerStatsDto stats = new CustomerStatsDto();
+            stats.setUserName(userName);
+            stats.setFullName(fullName);
+            stats.setOrderCount(orderCount);
+            stats.setTotalSpent(totalSpent);
+            stats.setAverageOrderValue(averageOrderValue);
+
+            customerStatsMap.put(userName, stats);
+        });
+
+        // Chuyển map thành list và sắp xếp theo số đơn hàng giảm dần
+        return customerStatsMap.values().stream()
+                .sorted(Comparator.comparing(CustomerStatsDto::getOrderCount).reversed())
+                .limit(limit)
                 .collect(Collectors.toList());
     }
 
     // Thống kê phương thức thanh toán
-    public List<PaymentMethodStatsDto> getPaymentMethodStats() {
-        log.info("Lấy thống kê phương thức thanh toán");
-        return paymentMethodStatsRepository.findAll()
-                .stream()
-                .map(this::convertToPaymentMethodDto)
+    public List<PaymentMethodStatsDto> getPaymentMethodStats(LocalDate startDate, LocalDate endDate) {
+        log.info("Lấy thống kê phương thức thanh toán từ {} đến {}", startDate, endDate);
+
+        // Lấy tất cả đơn hàng đã giao thành công trong khoảng thời gian
+        List<OrderDto> orders = getOrdersInDateRange(startDate, endDate);
+
+        int totalOrders = orders.size();
+        if (totalOrders == 0) {
+            log.info("Không có đơn hàng trong khoảng thời gian này");
+            return Collections.emptyList();
+        }
+
+        // Nhóm đơn hàng theo phương thức thanh toán
+        Map<String, List<OrderDto>> ordersByPaymentMethod = orders.stream()
+                .collect(Collectors.groupingBy(OrderDto::getPaymentMethod));
+
+        // Tạo map để lưu trữ thống kê phương thức thanh toán
+        List<PaymentMethodStatsDto> paymentStats = new ArrayList<>();
+
+        ordersByPaymentMethod.forEach((paymentMethod, methodOrders) -> {
+            int orderCount = methodOrders.size();
+            double totalRevenue = methodOrders.stream().mapToDouble(OrderDto::getTotalAmount).sum();
+            double percentage = (double) orderCount / totalOrders * 100;
+
+            PaymentMethodStatsDto stats = new PaymentMethodStatsDto();
+            stats.setPaymentMethod(paymentMethod);
+            stats.setOrderCount(orderCount);
+            stats.setTotalRevenue(totalRevenue);
+            stats.setPercentage(percentage);
+
+            paymentStats.add(stats);
+        });
+
+        return paymentStats;
+    }
+
+    // Phương thức hỗ trợ để lấy đơn hàng trong khoảng thời gian
+    private List<OrderDto> getOrdersInDateRange(LocalDate startDate, LocalDate endDate) {
+        // Lấy tất cả đơn hàng đã giao thành công
+        List<OrderDto> allOrders = orderSyncService.getOrderServiceClient().getDeliveredOrders();
+
+        // Lọc theo khoảng thời gian
+        return allOrders.stream()
+                .filter(order -> {
+                    LocalDate orderDate = order.getOrderDate().toLocalDate();
+                    return !orderDate.isBefore(startDate) && !orderDate.isAfter(endDate);
+                })
                 .collect(Collectors.toList());
     }
+
 
     // Các phương thức chuyển đổi
     private RevenueStatsDto convertToRevenueDto(RevenueStats entity) {

@@ -11,6 +11,7 @@ import com.rainbowforest.statisticsservice.repository.CustomerStatsRepository;
 import com.rainbowforest.statisticsservice.repository.PaymentMethodStatsRepository;
 import com.rainbowforest.statisticsservice.repository.ProductStatsRepository;
 import com.rainbowforest.statisticsservice.repository.RevenueStatsRepository;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -26,6 +27,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class OrderSyncService {
+    // Thêm getter cho OrderServiceClient
+    @Getter
     private final OrderServiceClient orderServiceClient;
     private final RevenueStatsRepository revenueStatsRepository;
     private final ProductStatsRepository productStatsRepository;
@@ -36,13 +39,20 @@ public class OrderSyncService {
     public void syncOrderData() {
         log.info("Bắt đầu đồng bộ dữ liệu từ Order Service");
         try {
-            List<OrderDto> allOrders = orderServiceClient.getAllOrders();
-            log.info("Đã lấy {} đơn hàng từ Order Service", allOrders.size());
+            // Xóa dữ liệu cũ
+            revenueStatsRepository.deleteAll();
+            productStatsRepository.deleteAll();
+            customerStatsRepository.deleteAll();
+            paymentMethodStatsRepository.deleteAll();
 
-            updateRevenueStats(allOrders);
-            updateProductStats(allOrders);
-            updateCustomerStats(allOrders);
-            updatePaymentMethodStats(allOrders);
+            // Lấy đơn hàng đã giao thành công
+            List<OrderDto> deliveredOrders = orderServiceClient.getDeliveredOrders();
+            log.info("Đã lấy {} đơn hàng đã giao thành công từ Order Service", deliveredOrders.size());
+
+            updateRevenueStats(deliveredOrders);
+            updateProductStats(deliveredOrders);
+            updateCustomerStats(deliveredOrders);
+            updatePaymentMethodStats(deliveredOrders);
 
             log.info("Đồng bộ dữ liệu thành công");
         } catch (Exception e) {
@@ -50,15 +60,24 @@ public class OrderSyncService {
         }
     }
 
+
+
     // Có thể gọi thủ công để đồng bộ dữ liệu
     public void syncOrderDataManually() {
         syncOrderData();
     }
 
     private void updateRevenueStats(List<OrderDto> orders) {
+        // Tạo map để lưu trữ dữ liệu thống kê theo ngày
+        Map<LocalDate, RevenueStats> statsMap = new HashMap<>();
+
+        // Lấy tất cả thống kê hiện có
+        revenueStatsRepository.findAll().forEach(stat ->
+                statsMap.put(stat.getDate(), stat)
+        );
+
         // Nhóm đơn hàng theo ngày và tính toán doanh thu
         Map<LocalDate, List<OrderDto>> ordersByDate = orders.stream()
-                .filter(order -> OrderStatusDto.DELIVERED.equals(order.getStatus()))
                 .collect(Collectors.groupingBy(order -> order.getOrderDate().toLocalDate()));
 
         ordersByDate.forEach((date, dailyOrders) -> {
@@ -66,20 +85,22 @@ public class OrderSyncService {
             int orderCount = dailyOrders.size();
             double averageOrderValue = orderCount > 0 ? dailyRevenue / orderCount : 0;
 
-            RevenueStats stats = revenueStatsRepository.findByDate(date);
-            if (stats == null) {
-                stats = new RevenueStats();
-                stats.setDate(date);
-            }
+            RevenueStats stats = statsMap.computeIfAbsent(date, k -> {
+                RevenueStats newStats = new RevenueStats();
+                newStats.setDate(date);
+                return newStats;
+            });
 
             stats.setDailyRevenue(dailyRevenue);
             stats.setOrderCount(orderCount);
             stats.setAverageOrderValue(averageOrderValue);
-
-            revenueStatsRepository.save(stats);
-            log.debug("Đã cập nhật thống kê doanh thu cho ngày {}", date);
         });
+
+        // Lưu tất cả thống kê
+        revenueStatsRepository.saveAll(statsMap.values());
     }
+
+
 
     private void updateProductStats(List<OrderDto> orders) {
         // Tạo map để lưu trữ thống kê sản phẩm
@@ -201,4 +222,5 @@ public class OrderSyncService {
         paymentMethodStatsRepository.saveAll(paymentStatsMap.values());
         log.debug("Đã cập nhật thống kê cho {} phương thức thanh toán", paymentStatsMap.size());
     }
+
 }
