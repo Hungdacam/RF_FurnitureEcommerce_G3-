@@ -9,6 +9,8 @@ const useAuthStore = create((set) => ({
   isLoggingIn: false,
   isCheckingAuth: true,
   isLoggingOut: false,
+  isVerifyingOtp: false,
+  isResendingOtp: false,
   role: null,
 
   checkAuth: async () => {
@@ -44,27 +46,10 @@ const useAuthStore = create((set) => ({
     try {
       console.log("signup: Gửi dữ liệu đăng ký:", data);
       const res = await axiosInstance.post("/api/registration", { ...data });
-      console.log("signup: Response /api/registration:", res.data);
-      if (res.data.token) {
-        localStorage.setItem("authToken", res.data.token);
-        // Gọi API để lấy thông tin đầy đủ của người dùng
-        const userRes = await axiosInstance.get(
-          `/api/users/by-username?username=${res.data.userName}`
-        );
-        console.log("signup: Response /api/users/by-username:", userRes.data);
-        set({
-          authUser: {
-            ...userRes.data,
-            roles: userRes.data.roleName ? [userRes.data.roleName] : [],
-          },
-          role: userRes.data.roleName ? [userRes.data.roleName] : null,
-        });
-        toast.success("Đăng ký thành công!");
-        navigate("/dashboard", { replace: true });
-        return true;
-      } else {
-        throw new Error("Không nhận được token từ server");
-      }
+      console.log("signup: Response /registration:", res.data);
+      set({ userName: res.data.userName });
+      toast.success(res.data.message || "Vui lòng kiểm tra email để nhận mã OTP!");
+      return true;
     } catch (error) {
       const err = error.response?.data;
       const errorMessage =
@@ -75,6 +60,62 @@ const useAuthStore = create((set) => ({
       return false;
     } finally {
       set({ isSigningUp: false });
+    }
+  },
+
+  verifyOtp: async (otpCode, userName, navigate) => {
+    set({ isVerifyingOtp: true });
+    try {
+      console.log("verifyOtp: Gửi mã OTP:", otpCode, "và userName:", userName);
+      const res = await axiosInstance.post("/api/verify-otp", { otpCode, userName });
+      console.log("verifyOtp: Response /verify-otp:", res.data);
+      if (res.data.token) {
+        localStorage.setItem("authToken", res.data.token);
+        const userRes = await axiosInstance.get(
+          `api/users/by-username?username=${res.data.userName}`
+        );
+        console.log("verifyOtp: Response /users/by-username:", userRes.data);
+        set({
+          authUser: {
+            ...userRes.data,
+            roles: userRes.data.roleName ? [userRes.data.roleName] : [],
+          },
+          role: userRes.data.roleName ? [userRes.data.roleName] : null,
+        });
+        await useCartStore.getState().syncLocalCart(userName);toast.success(res.data.message || "Xác thực email thành công!");
+        
+        navigate("/dashboard", { replace: true });
+        return true;
+      } else {
+        throw new Error("Không nhận được token từ server");
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Xác thực OTP thất bại";
+      console.error("verifyOtp: Lỗi:", errorMessage);
+      toast.error(errorMessage);
+      return false;
+    } finally {
+      set({ isVerifyingOtp: false });
+    }
+  },
+
+  resendOtp: async (userName) => {
+    set({ isResendingOtp: true });
+    try {
+      console.log("resendOtp: Gửi yêu cầu gửi lại OTP cho user:", userName);
+      const res = await axiosInstance.post("/api/resend-otp", { userName });
+      console.log("resendOtp: Response /resend-otp:", res.data);
+      toast.success(res.data.message || "Đã gửi lại mã OTP. Vui lòng kiểm tra email!");
+      return true;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Gửi lại OTP thất bại";
+      console.error("resendOtp: Lỗi:", errorMessage);
+      toast.error(errorMessage);
+      return false;
+    } finally {
+      set({ isResendingOtp: false });
     }
   },
 

@@ -15,7 +15,7 @@ import java.util.Map;
 @RequestMapping("/fallback")
 public class FallbackController {
 
-    @GetMapping("/user")
+   @RequestMapping(value = "/user", method = {RequestMethod.GET, RequestMethod.POST})
     public Mono<ResponseEntity<Map<String, String>>> userServiceFallback() {
         Map<String, String> response = new HashMap<>();
         response.put("message", "User Service is currently unavailable. Please try again later.");

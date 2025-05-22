@@ -5,6 +5,7 @@ import com.rainbowforest.userservice.service.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -18,6 +19,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+
 public class SecurityConfig {
 
     @Autowired
@@ -37,7 +39,7 @@ public class SecurityConfig {
         http
                 .csrf().disable()
                 .authorizeRequests()
-                .mvcMatchers("/registration","/api/registration","/registration/verify-otp","/verify-otp","/api/registration/verify-otp", "/login").permitAll()
+                .mvcMatchers("/registration","/api/registration","/verify-otp","/api/verify-otp","/resend-otp","/api/resend-otp", "/login").permitAll()
                 // Sử dụng antMatchers cho các URL có tham số query
                 .mvcMatchers("/users").authenticated()
                 .mvcMatchers("/users/**").authenticated()

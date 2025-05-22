@@ -13,12 +13,14 @@ const Signup = () => {
     lastName: '',
     email: '',
     phoneNumber: '',
+    otp: '',
   });
 
   const [errors, setErrors] = useState({});
   const [backendError, setBackendError] = useState('');
+  const [showOtpInput, setShowOtpInput] = useState(false);
   const navigate = useNavigate();
-  const { signup, isSigningUp } = useAuthStore();
+  const { signup, verifyOtp, resendOtp, isSigningUp, isVerifyingOtp, isResendingOtp } = useAuthStore();
 
   const validate = () => {
     const newErrors = {};
@@ -73,6 +75,11 @@ const Signup = () => {
       newErrors.phoneNumber = 'Số điện thoại phải gồm 10 chữ số';
     }
 
+    // OTP required if showOtpInput is true
+    if (showOtpInput && !formData.otp.trim()) {
+      newErrors.otp = 'Vui lòng nhập mã OTP';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -94,39 +101,54 @@ const Signup = () => {
     setBackendError('');
     if (!validate()) return;
 
-    const success = await signup(
-      {
-        userName: formData.userName,
-        userPassword: formData.userPassword,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phoneNumber: formData.phoneNumber,
-      },
-      navigate,
-      (msg) => {
-        console.log('Backend error:', msg);
-        if (typeof msg === 'string') {
-          if (msg.includes('Email') && msg.includes('Số điện thoại')) {
-            setErrors((prev) => ({
-              ...prev,
-              email: 'Email đã được sử dụng',
-              phoneNumber: 'Số điện thoại đã được sử dụng',
-            }));
-          } else if (msg.includes('Email')) {
-            setErrors((prev) => ({ ...prev, email: msg }));
-          } else if (msg.includes('Số điện thoại')) {
-            setErrors((prev) => ({ ...prev, phoneNumber: msg }));
+    if (!showOtpInput) {
+      const success = await signup(
+        {
+          userName: formData.userName,
+          userPassword: formData.userPassword,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phoneNumber: formData.phoneNumber,
+        },
+        navigate,
+        (err) => {
+          console.log('Backend error:', err);
+          if (typeof err === 'string') {
+            if (err.includes('Email') && err.includes('Số điện thoại')) {
+              setErrors((prev) => ({
+                ...prev,
+                email: 'Email đã được sử dụng',
+                phoneNumber: 'Số điện thoại đã được sử dụng',
+              }));
+            } else if (err.includes('Email')) {
+              setErrors((prev) => ({ ...prev, email: err }));
+            } else if (err.includes('Số điện thoại')) {
+              setErrors((prev) => ({ ...prev, phoneNumber: err }));
+            } else {
+              setBackendError(err);
+            }
           } else {
-            setBackendError(msg);
+            setBackendError('Đăng ký thất bại. Vui lòng thử lại.');
           }
         }
+      );
+
+      if (success) {
+        setShowOtpInput(true);
       }
-    );
+    } else {
+      const success = await verifyOtp(formData.otp, formData.userName, navigate);
+      if (!success) {
+        setErrors((prev) => ({ ...prev, otp: 'Mã OTP không hợp lệ' }));
+      }
+    }
+  };
 
-
+  const handleResendOtp = async () => {
+    const success = await resendOtp(formData.userName);
     if (!success) {
-      // Không cần setBackendError ở đây nữa
+      setErrors((prev) => ({ ...prev, otp: 'Gửi lại OTP thất bại' }));
     }
   };
 
@@ -136,113 +158,151 @@ const Signup = () => {
       style={{ backgroundImage: `url(${background})` }}
     >
       <div className="signup-form-wrapper">
-        <h2>Đăng ký tài khoản</h2>
+        <h2>{showOtpInput ? 'Xác thực Email' : 'Đăng ký tài khoản'}</h2>
+        {backendError && <div className="error">{backendError}</div>}
         <form onSubmit={handleSubmit}>
-          <div className="signup-input-group">
-            <label htmlFor="userName">Tên đăng nhập</label>
-            <input
-              type="text"
-              id="userName"
-              name="userName"
-              value={formData.userName}
-              onChange={handleChange}
-              required
-            />
-            {errors.userName && <span className="error">{errors.userName}</span>}
-          </div>
+          {!showOtpInput && (
+            <>
+              <div className="signup-input-group">
+                <label htmlFor="userName">Tên đăng nhập</label>
+                <input
+                  type="text"
+                  id="userName"
+                  name="userName"
+                  value={formData.userName}
+                  onChange={handleChange}
+                  required
+                />
+                {errors.userName && <span className="error">{errors.userName}</span>}
+              </div>
 
-          <div className="signup-input-group">
-            <label htmlFor="userPassword">Mật khẩu</label>
-            <input
-              type="password"
-              id="userPassword"
-              name="userPassword"
-              value={formData.userPassword}
-              onChange={handleChange}
-              required
-              autoComplete="new-password"
-            />
-            {errors.userPassword && (
-              <span className="error">{errors.userPassword}</span>
-            )}
-          </div>
+              <div className="signup-input-group">
+                <label htmlFor="userPassword">Mật khẩu</label>
+                <input
+                  type="password"
+                  id="userPassword"
+                  name="userPassword"
+                  value={formData.userPassword}
+                  onChange={handleChange}
+                  required
+                  autoComplete="new-password"
+                />
+                {errors.userPassword && (
+                  <span className="error">{errors.userPassword}</span>
+                )}
+              </div>
 
-          <div className="signup-input-group">
-            <label htmlFor="confirmPassword">Xác nhận mật khẩu</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              autoComplete="new-password"
-            />
-            {errors.confirmPassword && (
-              <span className="error">{errors.confirmPassword}</span>
-            )}
-          </div>
+              <div className="signup-input-group">
+                <label htmlFor="confirmPassword">Xác nhận mật khẩu</label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  autoComplete="new-password"
+                />
+                {errors.confirmPassword && (
+                  <span className="error">{errors.confirmPassword}</span>
+                )}
+              </div>
 
-          <div className="signup-input-group">
-            <label htmlFor="firstName">Họ</label>
-            <input
-              type="text"
-              id="firstName"
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleChange}
-              required
-            />
-            {errors.firstName && (
-              <span className="error">{errors.firstName}</span>
-            )}
-          </div>
+              <div className="signup-input-group">
+                <label htmlFor="firstName">Họ</label>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  required
+                />
+                {errors.firstName && (
+                  <span className="error">{errors.firstName}</span>
+                )}
+              </div>
 
-          <div className="signup-input-group">
-            <label htmlFor="lastName">Tên</label>
-            <input
-              type="text"
-              id="lastName"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleChange}
-              required
-            />
-            {errors.lastName && (
-              <span className="error">{errors.lastName}</span>
-            )}
-          </div>
+              <div className="signup-input-group">
+                <label htmlFor="lastName">Tên</label>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  required
+                />
+                {errors.lastName && (
+                  <span className="error">{errors.lastName}</span>
+                )}
+              </div>
 
-          <div className="signup-input-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-            {errors.email && <span className="error">{errors.email}</span>}
-          </div>
+              <div className="signup-input-group">
+                <label htmlFor="email">Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                />
+                {errors.email && <span className="error">{errors.email}</span>}
+              </div>
 
-          <div className="signup-input-group">
-            <label htmlFor="phoneNumber">Số điện thoại</label>
-            <input
-              type="tel"
-              id="phoneNumber"
-              name="phoneNumber"
-              value={formData.phoneNumber}
-              onChange={handleChange}
-              required
-            />
-            {errors.phoneNumber && <span className="error">{errors.phoneNumber}</span>}
-          </div>
+              <div className="signup-input-group">
+                <label htmlFor="phoneNumber">Số điện thoại</label>
+                <input
+                  type="tel"
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={handleChange}
+                  required
+                />
+                {errors.phoneNumber && <span className="error">{errors.phoneNumber}</span>}
+              </div>
+            </>
+          )}
 
-          {/* {backendError && <div className="backend-error">{backendError}</div>} */}
+          {showOtpInput && (
+            <>
+              <div className="signup-input-group">
+                <label htmlFor="otp">Mã OTP</label>
+                <input
+                  type="text"
+                  id="otp"
+                  name="otp"
+                  value={formData.otp}
+                  onChange={handleChange}
+                  required
+                />
+                {errors.otp && <span className="error">{errors.otp}</span>}
+              </div>
+              <button
+                type="button"
+                className="resend-otp-button"
+                onClick={handleResendOtp}
+                disabled={isSigningUp || isVerifyingOtp || isResendingOtp}
+              >
+                {isResendingOtp ? 'Đang gửi lại...' : 'Gửi lại OTP'}
+              </button>
+            </>
+          )}
 
-          <button className="signup-button" type="submit" disabled={isSigningUp}>
-            {isSigningUp ? 'Đang đăng ký...' : 'Đăng ký'}
+          <button
+            className="signup-button"
+            type="submit"
+            disabled={isSigningUp || isVerifyingOtp || isResendingOtp}
+          >
+            {isSigningUp
+              ? 'Đang đăng ký...'
+              : isVerifyingOtp
+              ? 'Đang xác thực...'
+              : showOtpInput
+              ? 'Xác thực'
+              : 'Đăng ký'}
           </button>
         </form>
 

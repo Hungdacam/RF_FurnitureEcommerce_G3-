@@ -56,6 +56,37 @@ public class RouteConfig {
                                                 .path("/api/registration")
                                                 .filters(f -> f
                                                                 .rewritePath("/api/registration", "/api/registration")
+                                                                .filter((exchange, chain) -> {
+                                                                        System.out.println(
+                                                                                        ">>> Gateway: Sending request to user-service: "
+                                                                                                        + exchange.getRequest()
+                                                                                                                        .getURI());
+                                                                        return chain.filter(exchange)
+                                                                                        .doOnSuccess(aVoid -> {
+                                                                                                System.out.println(
+                                                                                                                ">>> Gateway: Response status: "
+                                                                                                                                + exchange.getResponse()
+                                                                                                                                                .getStatusCode());
+                                                                                        })
+                                                                                        .doOnError(error -> {
+                                                                                                System.err.println(
+                                                                                                                ">>> Gateway: Error: "
+                                                                                                                                + error.getMessage());
+                                                                                        });
+                                                                }))
+                                                .uri("lb://user-service"))
+                                .route("user-service-verify-otp", r -> r
+                                                .path("/api/verify-otp")
+                                                .filters(f -> f
+                                                                .rewritePath("/api/verify-otp", "/api/verify-otp")
+                                                                .circuitBreaker(config -> config
+                                                                                .setName("userServiceCircuitBreaker")
+                                                                                .setFallbackUri("forward:/fallback/user")))
+                                                .uri("lb://user-service"))
+                                .route("user-service-resend-otp", r -> r
+                                                .path("/api/resend-otp")
+                                                .filters(f -> f
+                                                                .rewritePath("/api/resend-otp", "/api/resend-otp")
                                                                 .circuitBreaker(config -> config
                                                                                 .setName("userServiceCircuitBreaker")
                                                                                 .setFallbackUri("forward:/fallback/user")))

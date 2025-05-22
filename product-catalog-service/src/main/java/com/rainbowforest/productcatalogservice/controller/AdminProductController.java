@@ -47,6 +47,11 @@ public class AdminProductController {
         System.out.println(">>> Received POST /admin/products");
         System.out.println("Content-Type: " + request.getContentType());
         try {
+            // Kiểm tra tên sản phẩm đã tồn tại chưa
+            if (productService.getAllProductsByName(productName).size() > 0) {
+                return new ResponseEntity<>(null, headerGenerator.getHeadersForError(), HttpStatus.CONFLICT);
+            }
+
             // Upload hình ảnh lên Cloudinary
             Map uploadResult = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.asMap(
                     "upload_preset", "KTPM_G3"));

@@ -211,7 +211,14 @@ export default function Cart() {
     }
 
     if (error) {
-        return <div className="error">Lỗi khi tải giỏ hàng: {error}</div>;
+           return (
+            <div className="empty-cart">
+                <button className="back-button" onClick={() => navigate('/dashboard')}>
+                    ⬅ Quay lại
+                </button>
+                Giỏ hàng của bạn đang trống
+            </div>
+        );
     }
 
     if (!localCartItems.length) {

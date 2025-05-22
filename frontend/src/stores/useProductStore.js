@@ -121,6 +121,11 @@ const useProductStore = create((set) => ({
         headers: error.response?.headers,
         message: error.message,
       });
+      if (error.response?.status === 409) {
+        // Hiển thị toast và ném lỗi để form xử lý hiển thị dưới input
+        toast.error('Tên sản phẩm đã tồn tại!');
+        throw error;
+      }
       if (error.response?.status === 405) {
         await useProductStore.getState().fetchAllProducts();
         toast.success('Sản phẩm đã được thêm thành công, nhưng có lỗi phản hồi từ server (sẽ được sửa)!');

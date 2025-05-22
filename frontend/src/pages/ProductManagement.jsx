@@ -113,18 +113,24 @@ export default function ProductManagement() {
     e.preventDefault();
     if (!validateForm()) return;
 
-    await addProduct(productData, imageFile);
-    setShowForm(false);
-    setProductData({
-      product_name: "",
-      category: "",
-      description: "",
-      price: "",
-      quantity: "",
-    });
-    setImageFile(null);
-    setErrors({});
-    fetchAllProducts();
+    try {
+      await addProduct(productData, imageFile);
+      setShowForm(false);
+      setProductData({
+        product_name: "",
+        category: "",
+        description: "",
+        price: "",
+        quantity: "",
+      });
+      setImageFile(null);
+      setErrors({});
+      fetchAllProducts();
+    } catch (error) {
+      if (error.response && error.response.status === 409) {
+        setErrors({ product_name: "Tên sản phẩm đã tồn tại!" });
+      }
+    }
   };
 
   const handleDelete = async (id) => {

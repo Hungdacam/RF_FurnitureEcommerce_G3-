@@ -42,6 +42,9 @@ public class UserServiceImpl implements UserService {
     public User saveUser(User user) {
         user.setActive(1);
         UserRole role = userRoleRepository.findUserRoleByRoleName("ROLE_USER");
+        if (role == null) {
+            throw new RuntimeException("Role ROLE_USER not found");
+        }
         user.setRole(role);
         user.setUserPassword(passwordEncoder.encode(user.getUserPassword()));
         return userRepository.save(user);
