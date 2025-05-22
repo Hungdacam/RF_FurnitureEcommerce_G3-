@@ -91,7 +91,7 @@ const Header = () => {
     <header className="header">
       <div className="header-container">
         <div className="logo">
-          <Link to="/" className="logo-link">Shop App</Link>
+          <Link to="/" className="logo-link">Hưng đẹp trai</Link>
         </div>
         
         <nav className="navigation">
