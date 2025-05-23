@@ -1,0 +1,275 @@
+version: '3.8'
+
+services:
+  # Eureka Server
+  eureka-server:
+    build: ./eureka-server
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_SERVER_ENABLE_SELF_PRESERVATION=false
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=false
+      - EUREKA_CLIENT_FETCH_REGISTRY=false
+      - EUREKA_INSTANCE_HOSTNAME=eureka-server
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+    networks:
+      - microservice-network
+
+  # Redis for API Gateway
+  redis:
+    image: redis:7-alpine
+    container_name: redis-gateway
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - microservice-network
+
+  # MS SQL Server
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: sqlserver-users
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=Hunglv0711!@#
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+      - ./init-scripts/init-sqlserver.sql:/tmp/init-sqlserver.sql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Hunglv0711!@#' -C -No -Q 'SELECT 1' || exit 1"]
+      interval: 30s
+      retries: 10
+      start_period: 60s
+      timeout: 10s
+    networks:
+      - microservice-network
+
+  # Database configurator
+  sqlserver-configurator:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    volumes:
+      - ./init-scripts/init-sqlserver.sql:/tmp/init-sqlserver.sql
+    command: >
+      bash -c '
+      /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P "Hunglv0711!@#" -C -d master -i /tmp/init-sqlserver.sql;
+      echo "Database initialization completed!";
+      '
+    networks:
+      - microservice-network
+
+  # Product Catalog Service
+  product-catalog-service:
+    build: ./product-catalog-service
+    container_name: product-catalog-service
+    ports:
+      - "8810:8810"
+    depends_on:
+      sqlserver-configurator:  # THÊM DEPENDENCY NÀY
+        condition: service_completed_successfully
+      sqlserver:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      - JAVA_OPTS=-Xmx1024m -Xms512m
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8810/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    restart: on-failure
+    networks:
+      - microservice-network
+
+  # User Service
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    ports:
+      - "8811:8811"
+    depends_on:
+      sqlserver-configurator:  # THÊM DEPENDENCY NÀY
+        condition: service_completed_successfully
+      sqlserver:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      - JAVA_OPTS=-Xmx1024m -Xms512m
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8811/api/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 180s
+    restart: on-failure
+    networks:
+      - microservice-network
+
+  # Cart Service
+  cart-service:
+    build: ./cart-service
+    container_name: cart-service
+    ports:
+      - "8902:8902"
+    depends_on:
+      sqlserver-configurator:  # THÊM DEPENDENCY NÀY
+        condition: service_completed_successfully
+      sqlserver:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+    environment:
+      - JAVA_OPTS=-Xmx1024m -Xms512m
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8902/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    restart: on-failure
+    networks:
+      - microservice-network
+
+  # Order Service
+  order-service:
+    build: ./order-service
+    container_name: order-service
+    ports:
+      - "8812:8812"
+    depends_on:
+      sqlserver-configurator:  # THÊM DEPENDENCY NÀY
+        condition: service_completed_successfully
+      sqlserver:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      product-catalog-service:
+        condition: service_healthy
+      cart-service:
+        condition: service_healthy
+    environment:
+      - JAVA_OPTS=-Xmx1024m -Xms512m
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8812/api/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    restart: on-failure
+    networks:
+      - microservice-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:13-alpine
+    container_name: postgres-stats
+    environment:
+      - POSTGRES_DB=stats_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=Hunglv0711!@#
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/init-postgres.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d stats_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - microservice-network
+
+  # Statistics Service
+  statistics-service:
+    build: ./statistics-service
+    container_name: statistics-service
+    ports:
+      - "8813:8813"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      product-catalog-service:
+        condition: service_healthy
+      cart-service:
+        condition: service_healthy
+    environment:
+      - JAVA_OPTS=-Xmx1024m -Xms512m
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8813/api/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    restart: on-failure
+    networks:
+      - microservice-network
+
+  # API Gateway
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8900:8900"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      user-service:
+        condition: service_healthy
+    environment:
+      - JAVA_OPTS=-Xmx1024m -Xms512m
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8900/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - microservice-network
+
+volumes:
+  redis_data:
+  sqlserver_data:
+  postgres_data:
+
+networks:
+  microservice-network:
+    driver: bridge

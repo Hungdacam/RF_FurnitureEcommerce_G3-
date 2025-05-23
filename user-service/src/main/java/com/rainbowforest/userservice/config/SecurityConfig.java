@@ -37,23 +37,25 @@ public class SecurityConfig {
         http
                 .csrf().disable()
                 .authorizeRequests()
+                // Đặt actuator endpoints lên TRƯỚC TIÊN với antMatchers
+                .antMatchers("/actuator/**").permitAll()
+                // Cho phép các endpoint public
                 .mvcMatchers("/registration", "/login").permitAll()
-                // Sử dụng antMatchers cho các URL có tham số query
-                .mvcMatchers("/users").authenticated()
-                .mvcMatchers("/users/**").authenticated()
-                .anyRequest().authenticated()
+                // Yêu cầu authentication cho user endpoints
+                .mvcMatchers("/users", "/users/**").authenticated()
+                // Cho phép tất cả request khác
+                .anyRequest().permitAll()
                 .and()
                 .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
-                // Tắt hành vi logout mặc định của Spring Security
-                .logout().disable(); // Vô hiệu hóa cấu hình logout mặc định
-
+                .logout().disable();
 
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-
         return http.build();
     }
+
+
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {

@@ -42,6 +42,21 @@ public class JwtFilter extends OncePerRequestFilter {
             @NonNull FilterChain chain) throws ServletException, IOException {
 
         final String requestURI = request.getRequestURI();
+        final String servletPath = request.getServletPath();
+
+        logger.debug("=== JWT Filter Debug ===");
+        logger.debug("Request URI: {}", requestURI);
+        logger.debug("Servlet Path: {}", servletPath);
+        logger.debug("Context Path: {}", request.getContextPath());
+
+        // Skip actuator endpoints
+        if (requestURI.contains("/actuator") || servletPath.contains("/actuator")) {
+            logger.debug("SKIPPING JWT filter for actuator endpoint");
+            chain.doFilter(request, response);
+            return;
+        }
+
+        logger.debug("PROCESSING JWT for non-actuator endpoint");
         logger.debug("Processing request: {} with context path: {}",
                 requestURI, request.getContextPath());
         final String queryString = request.getQueryString();
