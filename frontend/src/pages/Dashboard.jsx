@@ -227,7 +227,10 @@ const Dashboard = () => {
                   Giỏ hàng
                 </a>
               </li>
-              <li className="nav-item"><a href="#" className="nav-link">About Us</a></li>
+              <li className="nav-item"><a href="#" className="nav-link" onClick={(e) => {
+                    e.preventDefault();
+                    navigate('/about-us');
+                  }}>About Us</a></li>
             </ul>
           </nav>
           <div className="search-bar">

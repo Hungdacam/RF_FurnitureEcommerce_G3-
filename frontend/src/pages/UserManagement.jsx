@@ -27,21 +27,30 @@ const UserManagement = () => {
   }, []);
 
   const handleToggleStatus = async (userId, currentStatus) => {
-    try {
-      const newStatus = currentStatus === 1 ? 0 : 1;
-      await axiosInstance.put(`/api/users/${userId}/status`, { active: newStatus });
-
+  try {
+    const newStatus = currentStatus === 1 ? 0 : 1;
+    const response = await axiosInstance.put(`/api/users/${userId}/status`, { active: newStatus });
+    
+    // Kiểm tra phản hồi từ server
+    if (response.status === 200) {
       // Cập nhật state để hiển thị thay đổi ngay lập tức
       setUsers(users.map(user =>
         user.id === userId ? { ...user, active: newStatus } : user
       ));
-
       alert('Đã cập nhật trạng thái người dùng thành công!');
-    } catch (err) {
-      console.error('Lỗi khi cập nhật trạng thái người dùng:', err);
+    }
+  } catch (err) {
+    console.error('Lỗi khi cập nhật trạng thái người dùng:', err);
+    
+    // Xử lý lỗi 404
+    if (err.response && err.response.status === 404) {
+      alert('Không tìm thấy người dùng. Vui lòng kiểm tra lại!');
+    } else {
       alert('Không thể cập nhật trạng thái người dùng. Vui lòng thử lại sau.');
     }
-  };
+  }
+};
+
 
   const handleViewDetail = (userId) => {
     navigate(`/user-detail/${userId}`);
@@ -111,12 +120,12 @@ const UserManagement = () => {
                     >
                       Chi tiết
                     </button>
-                    {/* <button 
+                    <button 
                       className={`toggle-status-button ${user.active === 1 ? 'deactivate' : 'activate'}`}
                       onClick={() => handleToggleStatus(user.id, user.active)}
                     >
                       {user.active === 1 ? 'Khóa' : 'Kích hoạt'}
-                    </button> */}
+                    </button>
                   </td>
                 </tr>
               ))

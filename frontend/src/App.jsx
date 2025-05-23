@@ -13,6 +13,7 @@ import OrderManagement from './pages/OrderManagement';
 import Orders from './pages/Orders';
 import UserManagement from './pages/UserManagement';
 import UserDetail from './pages/UserDetail';
+import AboutUs from './pages/AboutUs';
 const App = () => {
   return (
     <Router>
@@ -31,6 +32,7 @@ const App = () => {
         <Route path="/orders" element={<Orders />} />
         <Route path="/user-management" element={<UserManagement />} />
         <Route path="/user-detail/:userId" element={<UserDetail />} />
+        <Route path="/about-us" element={<AboutUs />} />
       </Routes>
     </Router>
   );
