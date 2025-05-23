@@ -1,27 +1,16 @@
-# Sử dụng image base Java 17
-FROM eclipse-temurin:17-jdk-alpine
+FROM openjdk:17-jdk-slim
 
-# Thiết lập thư mục làm việc
+# Cài đặt curl cho health check
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
-
-# Copy file pom.xml và mã nguồn
-COPY pom.xml .
-COPY src ./src
-
-# Copy file cấu hình
-COPY src/main/resources/application.properties ./src/main/resources/
-
-# Cài đặt Maven để build ứng dụng
-RUN apk add --no-cache maven
-
-# Build dự án
-RUN mvn clean package -DskipTests
-
-# Copy file JAR đã build vào container
-RUN cp target/api-gateway-0.0.1-SNAPSHOT.jar app.jar
-
-# Mở cổng 8900
+ARG JAR_FILE=target/api-gateway-*.jar
+COPY ${JAR_FILE} api-gateway.jar
 EXPOSE 8900
 
-# Lệnh chạy ứng dụng
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENV JAVA_OPTS="-Xmx1024m -Xms512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+CMD curl -f http://localhost:8900/actuator/health || exit 1
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar api-gateway.jar"]

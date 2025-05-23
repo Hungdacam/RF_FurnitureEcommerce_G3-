@@ -46,7 +46,9 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Role ROLE_USER not found");
         }
         user.setRole(role);
-        user.setUserPassword(passwordEncoder.encode(user.getUserPassword()));
+        // CHỈ mã hóa nếu mật khẩu chưa mã hóa (tùy trường hợp)
+        // Nếu đã mã hóa ở bước trước, KHÔNG mã hóa lại!
+        // user.setUserPassword(passwordEncoder.encode(user.getUserPassword()));
         return userRepository.save(user);
     }
 

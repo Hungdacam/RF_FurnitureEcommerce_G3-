@@ -22,6 +22,7 @@ import useAuthStore from "./stores/useAuthStore";
 import Statistics from "./pages/Statistics";
 import UserManagement from './pages/UserManagement';
 import UserDetail from './pages/UserDetail';
+import AboutUs from "./pages/AboutUS";
 const App = () => {
   const { checkAuth, isCheckingAuth } = useAuthStore();
 
@@ -78,6 +79,7 @@ const App = () => {
             />
              <Route path="/user-management" element={<UserManagement />} />
              <Route path="/user-detail/:userId" element={<UserDetail />} />
+              <Route path="/about-us" element={<AboutUs />} />
           </Routes>
         </main>
         <Toaster position="top-center" />
