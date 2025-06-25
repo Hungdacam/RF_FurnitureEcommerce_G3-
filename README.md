@@ -1,6 +1,6 @@
 🌟 Microservices Magic with Spring Boot and ReactJS 🌟
 🎉 Welcome to the Adventure!
-Step into the vibrant world of this microservices-powered application! Built with the robust Spring Boot framework for the backend and the dazzling ReactJS for the frontend, this project is a dazzling showcase of modern software architecture. With MS SQL Server and PostgreSQL as its dynamic database duo, this repository is your gateway to a scalable, colorful ecosystem! Proudly owned and crafted by [Your Name].
+Step into the vibrant world of this microservices-powered application! Built with the robust Spring Boot framework for the backend and the dazzling ReactJS for the frontend, this project is a dazzling showcase of modern software architecture. With MS SQL Server and PostgreSQL as its dynamic database duo, this repository is your gateway to a scalable, colorful ecosystem! Proudly owned and crafted by Hungdacam!
 🚀 Running the Backend (BE) and Frontend (FE) - Step-by-Step Guide
 Prerequisites
 Before you embark on this journey, ensure you have the following installed:
