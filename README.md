@@ -11,14 +11,14 @@ Node.js and npm for the ReactJS frontend.
 
 Step 1: Clone the Repository
 Start your adventure by cloning the repository:
-git clone <repository-url>
+git clone https://github.com/Hungdacam/RF_FurnitureEcommerce_G3-
 
 Replace <repository-url> with the actual URL of your GitHub repository.
 Step 2: Navigate to the Project Directory
 Move into the project folder:
-cd <repository-folder>
+cd RF_FurnitureEcommerce_G3-
 
-Replace <repository-folder> with the name of the cloned folder.
+Replace RF_FurnitureEcommerce_G3- with the name of the cloned folder.
 Step 3: Build and Run the Backend (BE)
 
 Ensure all services are ready by building Docker images:
