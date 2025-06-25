@@ -1,15 +1,26 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  server: {
-    proxy: {
-      '/products': {
-        target: 'http://localhost:8810', // URL của Product Catalog Service
-        changeOrigin: true,
-      },
-    },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    minify: 'esbuild',
   },
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://api-gateway:8900',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      '/products': {
+        target: 'http://product-catalog-service:8810',
+        changeOrigin: true,
+      }
+    }
+  }
 })

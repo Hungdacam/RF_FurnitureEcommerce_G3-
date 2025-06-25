@@ -1,90 +1,67 @@
 import axios from 'axios';
 
+// Kiểm tra môi trường để sử dụng base URL phù hợp
+const getBaseURL = () => {
+  // Trong production, sử dụng relative path
+  if (import.meta.env.PROD) {
+    return '';
+  }
+  // Trong development, sử dụng localhost
+  return 'http://localhost:8900';
+};
+
 export const axiosInstance = axios.create({
-  baseURL: 'http://localhost:8900', // Authentication Service
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-export  const axiosCatalog = axios.create({
-  baseURL: 'http://localhost:8900/api/catalog', // Product Catalog Service
- 
+export const axiosCatalog = axios.create({
+  baseURL: `${getBaseURL()}/api/catalog`,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 export const axiosCart = axios.create({
-  baseURL: 'http://localhost:8900/api/cart', // Cart Service via Gateway
+  baseURL: `${getBaseURL()}/api/cart`,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 export const axiosOrder = axios.create({
-  baseURL: 'http://localhost:8900/api/orders', // Order Service via Gateway
+  baseURL: `${getBaseURL()}/api/orders`,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
 export const axiosStats = axios.create({
-  baseURL: 'http://localhost:8900/api/statistics',
+  baseURL: `${getBaseURL()}/api/statistics`,
   headers: {
     'Content-Type': 'application/json',
   },
 });
-// Thêm interceptor để tự động thêm token vào header
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-axiosCatalog.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    console.log('Request URL:', config.url);
-    console.log('Request Method:', config.method);
-    console.log('Request Headers:', config.headers);
-    console.log('Request Data:', config.data);
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
 
-axiosCart.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+// Interceptors để thêm token
+const addTokenInterceptor = (axiosInstance) => {
+  axiosInstance.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
+};
 
-axiosOrder.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-axiosStats.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+// Áp dụng interceptor cho tất cả instances
+addTokenInterceptor(axiosInstance);
+addTokenInterceptor(axiosCatalog);
+addTokenInterceptor(axiosCart);
+addTokenInterceptor(axiosOrder);
+addTokenInterceptor(axiosStats);

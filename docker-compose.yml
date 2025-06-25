@@ -24,7 +24,7 @@ services:
   # Redis for API Gateway
   redis:
     image: redis:7-alpine
-    container_name: redis-gateway
+    container_name: redis
     ports:
       - "6379:6379"
     command: redis-server --appendonly yes
@@ -264,6 +264,32 @@ services:
       start_period: 60s
     networks:
       - microservice-network
+  # Thêm vào services section (sau api-gateway)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: react-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - microservice-network
+
+
+
+
 
 volumes:
   redis_data:
