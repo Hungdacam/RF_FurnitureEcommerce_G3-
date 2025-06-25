@@ -1,93 +1,164 @@
-🌟 Microservices Magic with Spring Boot and ReactJS 🌟
-🎉 Welcome to the Adventure!
-Step into the vibrant world of this microservices-powered application! Built with the robust Spring Boot framework for the backend and the dazzling ReactJS for the frontend, this project is a dazzling showcase of modern software architecture. With MS SQL Server and PostgreSQL as its dynamic database duo, this repository is your gateway to a scalable, colorful ecosystem! Proudly owned and crafted by [Your Name].
-🚀 Running the Backend (BE) and Frontend (FE) - Step-by-Step Guide
-Prerequisites
-Before you embark on this journey, ensure you have the following installed:
 
-Docker and Docker Compose to orchestrate the containers.
-Java 17 for the Spring Boot backend.
-Node.js and npm for the ReactJS frontend.
+# 🌟 Microservices Magic with Spring Boot and ReactJS
 
-Step 1: Clone the Repository
-Start your adventure by cloning the repository:
-git clone <repository-url>
+> **"May your code run smoothly and your microservices thrive!"**
 
-Replace <repository-url> with the actual URL of your GitHub repository.
-Step 2: Navigate to the Project Directory
-Move into the project folder:
-cd <repository-folder>
+---
 
-Replace <repository-folder> with the name of the cloned folder.
-Step 3: Build and Run the Backend (BE)
+## 🎉 Welcome to the Adventure!
 
-Ensure all services are ready by building Docker images:
+Chào mừng đến với một hành trình đầy sắc màu cùng hệ thống ứng dụng Microservices hiện đại!  
+Được xây dựng bằng **Spring Boot** mạnh mẽ ở backend và **ReactJS** lung linh ở frontend, đây là dự án tiêu biểu cho kiến trúc phần mềm hiện đại và có khả năng mở rộng cao.
+
+📦 **Cơ sở dữ liệu sử dụng:**  
+- MS SQL Server  
+- PostgreSQL  
+- Redis  
+
+👨‍💻 **Tác giả:** [Hungdacam](https://github.com/Hungdacam)
+
+---
+
+## 🚀 Tech Stack
+
+| Layer       | Technology               |
+|------------|---------------------------|
+| Frontend   | ReactJS, Docker           |
+| Backend    | Spring Boot, Java 17      |
+| API Gateway| Spring Cloud Gateway      |
+| Service Reg| Eureka Server             |
+| Databases  | MS SQL Server, PostgreSQL |
+| Caching    | Redis                     |
+| Orchestration | Docker, Docker Compose |
+
+---
+
+## 📁 Folder Structure (Cơ bản)
+
+```
+
+📦 RF_FurnitureEcommerce_G3-
+├── .idea/ # Cấu hình IDE
+├── api-gateway/ # Spring Cloud Gateway (Cổng API)
+├── cart-service/ # Dịch vụ giỏ hàng
+├── eureka-server/ # Service Discovery (Eureka)
+├── frontend/ # Ứng dụng ReactJS (Giao diện)
+├── init-scripts/ # Script tạo CSDL ban đầu
+├── invoices/ # Quản lý hóa đơn
+├── order-service/ # Dịch vụ đặt hàng
+├── product-catalog-service/ # Dịch vụ quản lý sản phẩm
+├── product-recommendation-service/ # Gợi ý sản phẩm
+├── statistics-service/ # Phân tích thống kê
+├── user-service/ # Quản lý người dùng
+├── docker/ # Cấu hình Docker bổ sung
+├── docker-compose/ # Dockerfile cho các service
+├── docker-compose.yml # Khởi tạo toàn bộ hệ thống
+├── .gitignore
+└── README.md # Tài liệu dự án 
+
+````
+
+---
+
+## 🛠️ Prerequisites
+
+Trước khi bắt đầu, hãy đảm bảo bạn đã cài đặt:
+
+- [Docker](https://www.docker.com/)
+- [Docker Compose](https://docs.docker.com/compose/)
+- [Java 17](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html)
+- [Node.js](https://nodejs.org/) và npm
+
+---
+
+## 🔧 Hướng dẫn chạy dự án
+
+### ✅ 1. Clone repository
+
+```bash
+git clone https://github.com/Hungdacam/RF_FurnitureEcommerce_G3-
+cd RF_FurnitureEcommerce_G3-
+````
+
+### ✅ 2. Khởi động Backend
+
+```bash
 docker-compose up --build
+```
 
+👉 Lệnh này sẽ:
 
-This command builds and starts all microservices (e.g., eureka-server, user-service, api-gateway, etc.) along with databases (MS SQL Server and PostgreSQL) and Redis.
-Wait for the services to initialize (this may take a few minutes as databases and services perform health checks).
+* Build và chạy các microservices (`eureka-server`, `api-gateway`, `user-service`, v.v.)
+* Khởi động MS SQL Server, PostgreSQL và Redis
 
+**✅ Kiểm tra Backend hoạt động:**
+Truy cập: [http://localhost:8900/actuator/health](http://localhost:8900/actuator/health)
+Kết quả mong đợi: `{"status":"UP"}`
 
-Verify the backend is running:
+---
 
-Check the API Gateway at http://localhost:8900/actuator/health in your browser or using curl.
-Look for a {"status":"UP"} response to confirm all services are healthy.
+### ✅ 3. Khởi động Frontend
 
-
-
-Step 4: Build and Run the Frontend (FE)
-
-Open a new terminal window and navigate to the frontend directory:
+```bash
 cd frontend
-
-
-Install frontend dependencies:
 npm install
-
-
-Build the ReactJS application for production:
 npm run build
+```
 
+Nếu frontend chưa tự chạy theo docker-compose, chạy riêng:
 
-Start the frontend container (ensure Docker is still running from Step 3):
+```bash
+docker-compose up frontend
+```
 
-The frontend is already configured to build and run via Docker Compose under the frontend service. If not already running from docker-compose up, start it manually:docker-compose up frontend
+**Hoặc dùng lệnh riêng:**
 
-
-Alternatively, use the provided Docker commands from package.json:npm run docker:build
+```bash
+npm run docker:build
 npm run docker:run
+```
 
+**✅ Kiểm tra Frontend hoạt động:**
+Truy cập: [http://localhost:3000](http://localhost:3000)
 
+---
 
+## 🐛 Troubleshooting
 
-Verify the frontend is running:
+| Tình huống             | Giải pháp                                                                 |
+| ---------------------- | ------------------------------------------------------------------------- |
+| Backend không phản hồi | `docker-compose logs` để kiểm tra lỗi                                     |
+| Frontend không kết nối | Kiểm tra port trong `docker-compose.yml`, đảm bảo `api-gateway` hoạt động |
+| Conflict port          | Kiểm tra ứng dụng nào khác đang chiếm port 3000, 8900, 8761...            |
+| Redis lỗi              | Đảm bảo Redis container được khởi tạo đúng (có trong compose)             |
 
-Open your browser and visit http://localhost:3000.
-You should see the ReactJS application loaded and interacting with the backend.
+---
 
+## 🛑 Dừng toàn bộ dịch vụ
 
-
-Step 5: Troubleshooting
-
-Backend Issues: Check Docker logs with docker-compose logs to identify any service failures. Ensure database initialization scripts in init-scripts executed successfully.
-Frontend Issues: If the frontend fails to load, ensure the backend API Gateway is healthy and the docker-compose.yml file has the correct port mappings (e.g., 3000:80 for frontend).
-Network Errors: Confirm no other applications are using ports 3000, 8900, 8761, etc.
-
-Step 6: Stopping the Application
-When you're done, stop and remove the containers:
+```bash
 docker-compose down
+```
 
-This cleans up resources but preserves data volumes (e.g., databases).
-⚙️ Configuration: The Art of Setup
+> Dữ liệu trong volumes vẫn được giữ nguyên.
 
-Database Initialization: SQL scripts are in init-scripts.
-Environment Variables: Defined in docker-compose.yml for services like MS SQL Server and PostgreSQL.
-Spring Profiles: Use the docker profile for containerized environment.
+---
 
-🤝 Contributing: Join the Creative Crew!
-Fork this repository, paint your ideas with pull requests, and let’s create magic together. Follow the existing code structure and conventions to keep the harmony alive.
-📜 License
-This project dances under the MIT License – check the LICENSE file for the fine print.
-🌈 Happy Coding!
-May your code run smoothly and your microservices thrive! 🌟
+## ⚙️ Configuration Tips
+
+Môi trường cấu hình qua file .env hoặc docker-compose.yml
+
+Các script khởi tạo DB nằm trong thư mục init-scripts
+
+Spring Boot chạy với profile docker
+---
+
+---
+
+## 🌈 Happy Coding!
+
+> 🚀 **Hãy để microservices của bạn tỏa sáng!**
+> 💻 **Chúc bạn viết code không bug và deploy không lỗi!**
+
+---
+
