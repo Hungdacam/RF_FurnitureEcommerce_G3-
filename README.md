@@ -152,6 +152,63 @@ Các script khởi tạo DB nằm trong thư mục init-scripts
 
 Spring Boot chạy với profile docker
 ---
+---
+
+## 🖼️ Giao diện và Chức năng Demo
+
+> Một số ảnh chụp minh họa các chức năng chính của hệ thống
+
+### 🧠 Kiến trúc Microservices
+
+![Architecture](./demo/architecture.png)
+
+---
+
+### 🏠 Trang chủ
+
+![Home Page](./demo/HomePage.png)
+
+---
+
+### 🛒 Giỏ hàng
+
+![Cart Screen](./demo/CartScreen.png)
+
+---
+
+### 📦 Lịch sử đơn hàng
+
+![Order History](./demo/OrderHistory.png)
+
+---
+
+### 📋 Quản lý đơn hàng
+
+![Order Management](./demo/OrderManagement.png)
+
+---
+
+### 💵 Thanh toán
+
+![Payment Screen](./demo/PaymentScreen.png)
+
+---
+
+### 📈 Thống kê doanh thu
+
+![Revenue Statistics](./demo/RevenueStatisticsScreen.png)
+
+---
+
+### 👤 Quản lý người dùng
+
+![User Management](./demo/UserManagementScreen.png)
+
+---
+
+### 📊 Tổng quan thống kê
+
+![Statistics](./demo/Statistics.png)
 
 ---
 
